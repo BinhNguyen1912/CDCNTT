@@ -79,14 +79,16 @@ export const useUpdateDishMutation = () => {
 };
 export const useUpdateProductMutation = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: ({ id, ...body }: UpdateProductBodyType & { id: number }) =>
       productsApiRequest.update(id, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['products'],
-        exact: true,
-      });
+    onSuccess: (_, variables) => {
+      // Invalidate danh sách products
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+
+      // Nếu bạn có query detail của product đó, cũng invalidate luôn
+      queryClient.invalidateQueries({ queryKey: ['product', variables.id] });
     },
   });
 };

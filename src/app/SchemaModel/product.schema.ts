@@ -110,6 +110,223 @@ export type VariantsType = z.infer<typeof VariantsSchema>;
 
 export type ProductType = z.infer<typeof ProductSchema>;
 
+// export function GenerateSKU(
+//   variants: VariantType[],
+//   prop?: { basePrice: number; image: string },
+// ): UpsertSKUBody[] {
+//   if (!variants || variants.length === 0) {
+//     return [];
+//   }
+
+//   const optionsArr = variants.map((v) => v.valueOption);
+//   const combinations = getCombine(optionsArr);
+
+//   return combinations.map((c) => ({
+//     value: c.value,
+//     price: c.price || prop?.basePrice || 0,
+//     image: c.image || prop?.image || '',
+//   }));
+// }
+
+// function getCombine(
+//   arr: {
+//     value: string;
+//     price: number;
+//     image: string;
+//   }[][],
+// ): {
+//   value: string;
+//   price: number;
+//   image: string;
+// }[] {
+//   if (!arr || arr.length === 0) return []; // Không có options → trả về rỗng
+
+//   return arr.reduce(
+//     (acc, curr) =>
+//       acc.flatMap((x) =>
+//         curr.map(({ image, price, value }) => ({
+//           value: x.value ? `${x.value}-${value}` : value,
+//           price,
+//           image,
+//         })),
+//       ),
+//     [] as { value: string; price: number; image: string }[], // seed rỗng
+//   );
+// }
+
+//   const optionsArr = variants.map((v) => v.valueOption);
+//   const combinations = getCombine(optionsArr);
+
+//   return combinations.map((c) => ({
+//     value: c.value,
+//     price: c.price || prop?.basePrice || 0,
+//     image: c.image || prop?.image || '',
+//   }));
+// }
+// export function GenerateSKU(
+//   variants: VariantType[],
+//   prop?: { basePrice: number; image: string },
+// ): UpsertSKUBody[] {
+//   // Nếu không có variants hoặc variants rỗng, trả về mảng rỗng
+//   if (!variants || variants.length === 0) {
+//     return [];
+//   }
+
+//   // Lấy danh sách valueOption của từng variant
+//   const optionsArr = variants.map((v) => v.valueOption);
+
+//   // Nếu không có options nào, trả về mảng rỗng
+//   if (optionsArr.length === 0 || optionsArr.every((opt) => opt.length === 0)) {
+//     return [];
+//   }
+
+//   const combinations = getCombine(optionsArr);
+
+//   // Nếu không có combinations, trả về mảng rỗng
+//   if (!combinations || combinations.length === 0) {
+//     return [];
+//   }
+
+//   return combinations.map((c) => ({
+//     value: c.value,
+//     price: c.price || prop?.basePrice || 0,
+//     image: c.image || prop?.image || '',
+//   }));
+// }
+
+// function getCombine(
+//   arr: {
+//     value: string;
+//     price: number;
+//     image: string;
+//   }[][],
+// ): {
+//   value: string;
+//   price: number;
+//   image: string;
+// }[] {
+//   // Nếu mảng arr rỗng hoặc không có phần tử nào
+//   if (!arr || arr.length === 0) {
+//     return [];
+//   }
+
+//   // Lọc bỏ các mảng con rỗng
+//   const nonEmptyArr = arr.filter((subArr) => subArr.length > 0);
+
+//   // Nếu tất cả mảng con đều rỗng
+//   if (nonEmptyArr.length === 0) {
+//     return [];
+//   }
+
+//   // Bắt đầu với mảng rỗng thay vì seed rỗng
+//   let result: { value: string; price: number; image: string }[] = [];
+
+//   for (let i = 0; i < nonEmptyArr.length; i++) {
+//     const currentOptions = nonEmptyArr[i];
+
+//     if (i === 0) {
+//       // Khởi tạo với options đầu tiên
+//       result = currentOptions.map((opt) => ({
+//         value: opt.value,
+//         price: opt.price,
+//         image: opt.image,
+//       }));
+//     } else {
+//       // Kết hợp với options tiếp theo
+//       result = result.flatMap((existing) =>
+//         currentOptions.map((opt) => ({
+//           value: `${existing.value}-${opt.value}`,
+//           price: opt.price,
+//           image: opt.image,
+//         })),
+//       );
+//     }
+//   }
+
+//   return result;
+// }
+// export function GenerateSKU(
+//   variants: VariantType[],
+//   prop?: { basePrice: number; image: string },
+// ): UpsertSKUBody[] {
+//   // Nếu không có variants hoặc variants rỗng, trả về mảng rỗng
+//   if (!variants || variants.length === 0) {
+//     return [];
+//   }
+
+//   // Lấy danh sách valueOption của từng variant
+//   const optionsArr = variants.map((v) => v.valueOption);
+
+//   // Nếu không có options nào, trả về mảng rỗng
+//   if (optionsArr.length === 0 || optionsArr.every((opt) => opt.length === 0)) {
+//     return [];
+//   }
+
+//   const combinations = getCombine(optionsArr);
+
+//   // Nếu không có combinations, trả về mảng rỗng
+//   if (!combinations || combinations.length === 0) {
+//     return [];
+//   }
+
+//   return combinations.map((c) => ({
+//     value: c.value,
+//     price: c.price || prop?.basePrice || 0,
+//     image: c.image || prop?.image || '',
+//   }));
+// }
+
+// function getCombine(
+//   arr: {
+//     value: string;
+//     price: number;
+//     image: string;
+//   }[][],
+// ): {
+//   value: string;
+//   price: number;
+//   image: string;
+// }[] {
+//   // Nếu mảng arr rỗng hoặc không có phần tử nào
+//   if (!arr || arr.length === 0) {
+//     return [];
+//   }
+
+//   // Lọc bỏ các mảng con rỗng
+//   const nonEmptyArr = arr.filter((subArr) => subArr.length > 0);
+
+//   // Nếu tất cả mảng con đều rỗng
+//   if (nonEmptyArr.length === 0) {
+//     return [];
+//   }
+
+//   // Bắt đầu với mảng rỗng thay vì seed rỗng
+//   let result: { value: string; price: number; image: string }[] = [];
+
+//   for (let i = 0; i < nonEmptyArr.length; i++) {
+//     const currentOptions = nonEmptyArr[i];
+
+//     if (i === 0) {
+//       // Khởi tạo với options đầu tiên
+//       result = currentOptions.map((opt) => ({
+//         value: opt.value,
+//         price: opt.price,
+//         image: opt.image,
+//       }));
+//     } else {
+//       // Kết hợp với options tiếp theo
+//       result = result.flatMap((existing) =>
+//         currentOptions.map((opt) => ({
+//           value: `${existing.value}-${opt.value}`,
+//           price: opt.price,
+//           image: opt.image,
+//         })),
+//       );
+//     }
+//   }
+
+//   return result;
+// }
 export function GenerateSKU(
   variants: VariantType[],
   prop?: { basePrice: number; image: string },
@@ -164,7 +381,6 @@ export function GenerateSKU(
 
   return skus;
 }
-
 /**
  * Dành cho Client và Guest và Staff
  */
@@ -236,31 +452,44 @@ export const CreateProductBodySchema = ProductSchema.pick({
   .superRefine(({ variants, skus, basePrice, images }, ctx) => {
     //Kiểm tra xem số lượng sku có hợp lệ không
     if (skus.length === 0) {
-      skus = GenerateSKU([]);
+      const generatedSkus = GenerateSKU(variants, {
+        basePrice,
+        image: images[0],
+      });
+      if (generatedSkus.length > 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['skus'],
+          message: `Số lượng SKUS nên là ${generatedSkus.length}. Vùi lòng kiểm tra lại`,
+        });
+      }
+      return;
     }
+
     const skuValueArray = GenerateSKU(variants, {
       basePrice,
       image: images[0],
     });
 
     if (skus.length !== skuValueArray.length) {
-      return ctx.addIssue({
+      ctx.addIssue({
         code: 'custom',
         path: ['skus'],
         message: `Số lượng SKUS nên là ${skuValueArray.length}. Vùi lòng kiểm tra lại`,
       });
+      return;
     }
 
     //kiểm tra xem từng Sku có hợp lệ hay không
     let wrongSKUIndex = -1;
     const isValidSKUs = skus.every((sku, index) => {
-      const inValid = sku.value == skuValueArray[index].value;
-      if (!inValid) wrongSKUIndex = index;
-      return inValid;
+      const isValid = sku.value === skuValueArray[index].value;
+      if (!isValid) wrongSKUIndex = index;
+      return isValid;
     });
 
     if (!isValidSKUs) {
-      return ctx.addIssue({
+      ctx.addIssue({
         code: 'custom',
         path: ['skus', wrongSKUIndex],
         message: `Giá trị SKU index ${wrongSKUIndex} không hợp lệ. Vui lòng kiểm tra lại `,
@@ -269,8 +498,145 @@ export const CreateProductBodySchema = ProductSchema.pick({
   });
 
 export type UpsertSKUBodyType = z.infer<typeof UpsertSKUBodySchema>;
+export const UpdateProductBodySchema = ProductSchema.pick({
+  basePrice: true,
+  virtualPrice: true,
+  name: true,
+  variants: true,
+  publishedAt: true,
+  images: true,
+})
+  .extend({
+    categories: z.array(z.coerce.number().int().positive()),
+    skus: z.array(UpsertSKUBodySchema),
+  })
+  .strict()
+  .superRefine(({ variants, skus, basePrice, images, name }, ctx) => {
+    // ✅ Trường hợp không có variants → cần 1 SKU kế thừa gốc
+    if (variants.length === 0) {
+      if (skus.length !== 1) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['skus'],
+          message: `Khi không có variants, cần đúng 1 SKU kế thừa từ sản phẩm gốc`,
+        });
+        return;
+      }
 
-export const UpdateProductBodySchema = CreateProductBodySchema;
+      const expectedSku = {
+        value: name,
+        price: basePrice,
+        image: images[0] ?? '',
+      };
+
+      const sku = skus[0];
+      if (sku.value !== expectedSku.value) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['skus', 0, 'value'],
+          message: `SKU phải có value = "${expectedSku.value}"`,
+        });
+      }
+      return;
+    }
+
+    // ✅ Trường hợp có variants → kiểm tra generate
+    const generatedSkus = GenerateSKU(variants, {
+      basePrice,
+      image: images[0],
+    });
+
+    if (skus.length !== generatedSkus.length) {
+      console.log('skus.length', skus);
+      console.log('generatedSkus.length', generatedSkus);
+
+      ctx.addIssue({
+        code: 'custom',
+        path: ['skus'],
+        message: `Cần có ${generatedSkus.length} SKUs khi có variants. Vui lòng kiểm tra lại`,
+      });
+      return;
+    }
+
+    // check từng SKU
+    skus.forEach((sku, index) => {
+      if (sku.value !== generatedSkus[index].value) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['skus', index, 'value'],
+          message: `SKU index ${index} không khớp với variants. Expected "${generatedSkus[index].value}"`,
+        });
+      }
+    });
+  });
+
+// export const UpdateProductBodySchema = ProductSchema.pick({
+//   basePrice: true,
+//   virtualPrice: true,
+//   name: true,
+//   variants: true,
+//   publishedAt: true,
+//   images: true,
+// })
+//   .extend({
+//     categories: z.array(z.coerce.number().int().positive()),
+//     skus: z.array(UpsertSKUBodySchema),
+//   })
+//   .strict()
+//   .superRefine(({ variants, skus, basePrice, images }, ctx) => {
+//     console.log('variants', variants);
+//     console.log('skus', skus);
+
+//     // Bỏ qua validation nếu cả variants và skus đều rỗng (cho phép update)
+//     if (variants.length === 0 && skus.length === 0) {
+//       return;
+//     }
+
+//     // Nếu có dữ liệu, áp dụng validation giống Create
+//     if (skus.length === 0) {
+//       const generatedSkus = GenerateSKU(variants, {
+//         basePrice,
+//         image: images[0],
+//       });
+//       if (generatedSkus.length > 0) {
+//         ctx.addIssue({
+//           code: 'custom',
+//           path: ['skus'],
+//           message: `Số lượng SKUS nên là ${generatedSkus.length}. Vùi lòng kiểm tra lại`,
+//         });
+//       }
+//       return;
+//     }
+
+//     const skuValueArray = GenerateSKU(variants, {
+//       basePrice,
+//       image: images[0],
+//     });
+
+//     if (skus.length !== skuValueArray.length) {
+//       ctx.addIssue({
+//         code: 'custom',
+//         path: ['skus'],
+//         message: `Số lượng SKUS nên là ${skuValueArray.length}. Vùi lòng kiểm tra lại`,
+//       });
+//       return;
+//     }
+
+//     let wrongSKUIndex = -1;
+//     const isValidSKUs = skus.every((sku, index) => {
+//       const isValid = sku.value === skuValueArray[index].value;
+//       if (!isValid) wrongSKUIndex = index;
+//       return isValid;
+//     });
+
+//     if (!isValidSKUs) {
+//       ctx.addIssue({
+//         code: 'custom',
+//         path: ['skus', wrongSKUIndex],
+//         message: `Giá trị SKU index ${wrongSKUIndex} không hợp lệ. Vui lòng kiểm tra lại `,
+//       });
+//     }
+//   });
 
 export type CreateProductBodyType = z.infer<typeof CreateProductBodySchema>;
 

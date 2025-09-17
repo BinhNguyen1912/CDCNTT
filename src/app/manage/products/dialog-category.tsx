@@ -33,7 +33,6 @@ export default function DialogCategory({
     [initialCategories],
   );
   const parentCategories = categories.filter((c) => !c.parentCategoryId);
-  console.log('parentCategories', parentCategories);
 
   const childCategories = categories.filter((c) => c.parentCategoryId);
 

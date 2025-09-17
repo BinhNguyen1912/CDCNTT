@@ -43,7 +43,7 @@ export const productsApiRequest = {
     );
   },
   update: (id: number, data: UpdateProductBodyType) =>
-    http.put<GetProductDetailType>(`${prefix}/${id}`, data),
+    http.put<GetProductDetailType>(`${ManagerPrefix}/${id}`, data),
   getDish: (id: number) => http.get<DishResType>(`${prefix}/${id}`),
   //Mặc định Next15 thì fetch là {cache: 'no-cache' -> dynamic rendering}, hiện tại Next14 mặc định là {cache: 'force-cache'} nghĩa là cache static rendering
 
@@ -55,7 +55,7 @@ export const productsApiRequest = {
     http.delete<GetProductDetailType>(`${ManagerPrefix}/${id}`),
 
   getProduct: (id: number) =>
-    http.get<GetProductDetailType>(`${UserPrefix}/${id}`),
+    http.get<GetProductDetailType>(`${ManagerPrefix}/${id}`),
 };
 
 export default productsApiRequest;

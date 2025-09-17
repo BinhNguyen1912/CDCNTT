@@ -53,7 +53,7 @@ import {
 } from '@/lib/utils';
 import { useSearchParams } from 'next/navigation';
 import AutoPagination from '@/components/auto-pagination';
-import EditDish from '@/app/manage/products/edit-dish';
+import EditDish from '@/app/manage/products/edit-product';
 import AddDish from '@/app/manage/products/add-product';
 import { toast } from 'react-toastify';
 import {
@@ -62,6 +62,7 @@ import {
   useGetProductListManager,
 } from '@/app/queries/useProducts';
 import { GetListProductsResType } from '@/app/SchemaModel/product.schema';
+import { LockKeyhole, LockKeyholeOpen } from 'lucide-react';
 
 type ProductItem = GetListProductsResType['data'][0];
 
@@ -104,7 +105,7 @@ export const columns: ColumnDef<GetListProductsResType['data'][0]>[] = [
   },
   {
     accessorKey: 'basePrice',
-    header: 'Giá Thật',
+    header: 'Giá Gốc',
     cell: ({ row }) => (
       <div className="capitalize">
         {formatCurrency(row.getValue('basePrice'))}
@@ -113,7 +114,7 @@ export const columns: ColumnDef<GetListProductsResType['data'][0]>[] = [
   },
   {
     accessorKey: 'virtualPrice',
-    header: 'Giá Ảo',
+    header: 'Giá Hiển Thị',
     cell: ({ row }) => (
       <div className="capitalize">
         {formatCurrency(row.getValue('virtualPrice'))}
@@ -124,9 +125,21 @@ export const columns: ColumnDef<GetListProductsResType['data'][0]>[] = [
   {
     accessorKey: 'publishedAt',
     header: 'Trạng thái',
-    cell: ({ row }) => (
-      <div>{row.getValue('status') !== null ? 'Public' : 'Private'}</div>
-    ),
+    cell: ({ row }) => {
+      const publishedAt = row.getValue('publishedAt') as
+        | string
+        | null
+        | undefined;
+      const isPublic = Boolean(publishedAt);
+
+      return (
+        <span
+          className={`px-2 py-1 flex items-center justify-center rounded-full text-center text-xs font-semibold `}
+        >
+          {isPublic ? <LockKeyholeOpen /> : <LockKeyhole />}
+        </span>
+      );
+    },
   },
   {
     accessorKey: 'createdBy',
@@ -243,8 +256,6 @@ export default function DishTable() {
       sortBy: 'createdAt',
     }).data?.payload.data || [];
   // data = dataProducts || [];
-
-  console.log('dataProducts', dataProducts);
 
   const table = useReactTable({
     data: dataProducts || [],
