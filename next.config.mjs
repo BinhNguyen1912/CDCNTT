@@ -34,6 +34,11 @@ const nextConfig = {
         hostname: 'cdn.dribbble.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'nhahang.ai',
+        pathname: '/**',
+      },
     ],
   },
 };

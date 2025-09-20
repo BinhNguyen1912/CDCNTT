@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { useCreateTableMutation } from '@/app/queries/useTable';
+import { useCreateTableMutation } from '@/app/useTable';
 import { toast } from 'react-toastify';
 import { TableStatus, TableStatusValues } from '@/app/constants/table.constant';
 import {

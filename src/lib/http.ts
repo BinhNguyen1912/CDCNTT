@@ -116,7 +116,14 @@ const request = async <Response>(
     method,
   });
 
-  const payload: Response = await res.json();
+  // Fix: safely parse JSON only if response has body
+  let payload: Response | null = null;
+  const text = await res.text();
+  try {
+    payload = text ? JSON.parse(text) : null;
+  } catch {
+    payload = null;
+  }
   const data = {
     status: res.status,
     payload,

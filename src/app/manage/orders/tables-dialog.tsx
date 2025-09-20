@@ -32,7 +32,7 @@ import { cn, getVietnameseTableStatus, simpleMatchText } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { TableListResType } from '@/app/schemaValidations/table.schema';
 import { TableStatus } from '@/app/constants/type';
-import { useListTable } from '@/app/queries/useTable';
+import { useListTable } from '@/app/useTable';
 
 type TableItem = TableListResType['data'][0];
 
@@ -152,7 +152,7 @@ export function TablesDialog({
                               ? null
                               : flexRender(
                                   header.column.columnDef.header,
-                                  header.getContext()
+                                  header.getContext(),
                                 )}
                           </TableHead>
                         );
@@ -186,7 +186,7 @@ export function TablesDialog({
                           <TableCell key={cell.id}>
                             {flexRender(
                               cell.column.columnDef.cell,
-                              cell.getContext()
+                              cell.getContext(),
                             )}
                           </TableCell>
                         ))}

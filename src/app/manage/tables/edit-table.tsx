@@ -34,7 +34,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
 
-import { useTableDetail, useUpdateTableMutation } from '@/app/queries/useTable';
+import { useTableDetail, useUpdateTableMutation } from '@/app/useTable';
 import { use, useEffect } from 'react';
 import QrCodeTable from '@/components/qrcode-table';
 import { toast } from 'react-toastify';

@@ -46,12 +46,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { getVietnameseTableStatus, handleErrorApi } from '@/lib/utils';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AutoPagination from '@/components/auto-pagination';
 import EditTable from '@/app/manage/tables/edit-table';
 import AddTable from '@/app/manage/tables/add-table';
 import { TableListResType } from '@/app/schemaValidations/table.schema';
-import { useDeleteTableMutation, useListTable } from '@/app/queries/useTable';
+import { useDeleteTableMutation, useListTable } from '@/app/useTable';
 import QrCodeTable from '@/components/qrcode-table';
 import { toast } from 'react-toastify';
 
@@ -211,7 +211,7 @@ export default function TableTable() {
     pageIndex, // Gía trị mặc định ban đầu, không có ý nghĩa khi data được fetch bất đồng bộ
     pageSize: PAGE_SIZE, //default page size
   });
-
+  const route = useRouter();
   const table = useReactTable({
     data,
     columns,
@@ -278,7 +278,7 @@ export default function TableTable() {
                           ? null
                           : flexRender(
                               header.column.columnDef.header,
-                              header.getContext()
+                              header.getContext(),
                             )}
                       </TableHead>
                     );
@@ -297,7 +297,7 @@ export default function TableTable() {
                       <TableCell key={cell.id} className="text-center">
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </TableCell>
                     ))}

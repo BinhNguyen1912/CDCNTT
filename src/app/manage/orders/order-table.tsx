@@ -53,7 +53,7 @@ import {
   useGetOrderListQuery,
   useUpdateOrderMutation,
 } from '@/app/queries/useOrder';
-import { useListTable } from '@/app/queries/useTable';
+import { useListTable } from '@/app/useTable';
 import { toast } from 'react-toastify';
 import {
   GuestCreateOrdersBodyType,
@@ -109,7 +109,7 @@ export default function OrderTable() {
   const tableListData = useListTable();
   const tableList = tableListData.data?.payload.data || [];
   const tableListSortedByNumber = tableList.sort(
-    (a: any, b: any) => a.number - b.number
+    (a: any, b: any) => a.number - b.number,
   );
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -197,13 +197,13 @@ export default function OrderTable() {
         `Món ăn ${data.dishSnapshot.name} - SL: ${
           data.quantity
         } đã được chuyển sang trạng thái ${getVietnameseOrderStatus(
-          data.status
+          data.status,
         )}`,
         {
           hideProgressBar: true,
           autoClose: 2000,
           icon: false,
-        }
+        },
       );
       refetch();
     }
@@ -220,14 +220,14 @@ export default function OrderTable() {
           hideProgressBar: true,
           autoClose: 2000,
           icon: false,
-        }
+        },
       );
       refetch();
     }
     function onPayment(data: PayGuestOrdersResType['data']) {
       const guest = data[0].guest;
       toast.success(
-        `Khách hàng ${guest?.name} vừa thanh toán ${data.length} món tại bàn ${guest?.tableNumber} `
+        `Khách hàng ${guest?.name} vừa thanh toán ${data.length} món tại bàn ${guest?.tableNumber} `,
       );
       refetch();
     }
@@ -329,7 +329,7 @@ export default function OrderTable() {
                   ? getVietnameseOrderStatus(
                       table
                         .getColumn('status')
-                        ?.getFilterValue() as (typeof OrderStatusValues)[number]
+                        ?.getFilterValue() as (typeof OrderStatusValues)[number],
                     )
                   : 'Trạng thái'}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -350,7 +350,7 @@ export default function OrderTable() {
                               currentValue ===
                                 table.getColumn('status')?.getFilterValue()
                                 ? ''
-                                : currentValue
+                                : currentValue,
                             );
                           setOpenStatusFilter(false);
                         }}
@@ -361,7 +361,7 @@ export default function OrderTable() {
                             table.getColumn('status')?.getFilterValue() ===
                               status
                               ? 'opacity-100'
-                              : 'opacity-0'
+                              : 'opacity-0',
                           )}
                         />
                         {getVietnameseOrderStatus(status)}
@@ -393,7 +393,7 @@ export default function OrderTable() {
                             ? null
                             : flexRender(
                                 header.column.columnDef.header,
-                                header.getContext()
+                                header.getContext(),
                               )}
                         </TableHead>
                       );
@@ -412,7 +412,7 @@ export default function OrderTable() {
                         <TableCell key={cell.id}>
                           {flexRender(
                             cell.column.columnDef.cell,
-                            cell.getContext()
+                            cell.getContext(),
                           )}
                         </TableCell>
                       ))}

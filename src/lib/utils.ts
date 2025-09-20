@@ -138,8 +138,8 @@ export const checkAndRefreshToken = async (param?: {
         role == Role.GUEST
           ? await guestApiRequests.refreshToken()
           : await authApiRequests.refreshToken();
-      setAccessTokenFormLocalStorage(res.payload.accessToken);
-      setRefreshTokenFormLocalStorage(res.payload.refreshToken);
+      setAccessTokenFormLocalStorage(res!.payload.accessToken);
+      setRefreshTokenFormLocalStorage(res!.payload.refreshToken);
 
       param?.onSuccess && param.onSuccess();
     } catch (error: any) {
@@ -222,9 +222,7 @@ export const getBgOrderStatus = (
   }
 };
 
-export const getVietnameseTableStatus = (
-  status: (typeof TableStatus)[keyof typeof TableStatus],
-) => {
+export const getVietnameseTableStatus = (status: string) => {
   switch (status) {
     case TableStatus.AVAILABLE:
       return 'Có sẵn';
