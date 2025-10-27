@@ -1,6 +1,9 @@
 'use client';
 import { useSendOTPMutation } from '@/app/queries/useAuth';
-import { otpBodySchema, OtpBodyType } from '@/app/SchemaModel/auth.schema';
+import {
+  otpBodySchema,
+  OtpBodyType,
+} from '@/app/ValidationSchemas/auth.schema';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

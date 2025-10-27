@@ -2,77 +2,63 @@
 /* eslint-disable jsx-a11y/alt-text */
 'use client';
 
-import { DemoSkiper16 } from '@/components/demo';
-import LoadingScreen from '@/components/LoadingScreen';
-import { LogoCloud } from '@/components/logo-cloud';
+import { useAppStore } from '@/components/app-provider';
+import ProductsPage from '@/components/productsPage';
+import Logomarquee from '@/components/logomarquee';
+import ParticleView from '@/components/particleText';
 import { Button } from '@/components/ui/button';
+import { VideoText } from '@/components/video-text';
 import { useLoading } from '@/hooks/useLoading';
 import { ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import SlideInText from '@/components/SlideInText ';
+import SlideInView from '@/components/SlideInText ';
+import AnimatedImagesWithBg from '@/components/animatedImagesWithBg';
+import BananaTreeSection from '@/components/bananaTreeSection';
+import BananaTreeAnimation from '@/components/bananaTreeAnimation';
+import ClientOnly from '@/components/ClientOnly';
+import AboutSection from '@/components/AboutSection';
 
 export default function Home() {
   const { isLoading, progress } = useLoading();
-
-  if (isLoading) {
-    return <LoadingScreen progress={progress} />;
-  }
+  const isAuth = useAppStore((state) => state.isAuth);
 
   return (
-    <div className="w-full space-y-4">
-      <section>
-        <div className="py-40 md:pb-32 lg:pb-40">
-          <div className="relative mx-auto flex max-w-7xl flex-col px-6 lg:block lg:px-12">
-            <div className="mx-auto max-w-lg text-center lg:ml-0 lg:max-w-full lg:text-left">
-              <h1 className="mt-8 max-w-2xl text-balance text-5xl md:text-6xl lg:mt-16 xl:text-7xl">
-                Binh Nguyen
-              </h1>
-              <p className="mt-8 max-w-2xl text-balance text-lg">RESTAURENT</p>
+    <div className="w-full">
+      <section
+        className="relative block w-screen overflow-hidden left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] -mt-6 md:-mt-8"
+        style={{
+          backgroundImage: `url('https://aban.com.vn/wp-content/uploads/2023/04/Menu-3-1-1.jpg')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Overlay to improve text contrast */}
+        <div className="absolute inset-0 bg-black/30" />
 
-              <div className="mt-12 flex flex-col items-center justify-center gap-2 sm:flex-row lg:justify-start">
-                <Button
-                  asChild
-                  size="lg"
-                  className="h-12 rounded-full pl-5 pr-3 text-base"
-                >
-                  <Link href="#link">
-                    <span className="text-nowrap">Start Building</span>
-                    <ChevronRight className="ml-1" />
-                  </Link>
-                </Button>
-                <Button
-                  key={2}
-                  asChild
-                  size="lg"
-                  variant="ghost"
-                  className="h-12 rounded-full px-5 text-base hover:bg-zinc-950/5 dark:hover:bg-white/5"
-                >
-                  <Link href="#link">
-                    <span className="text-nowrap">Request a demo</span>
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-          <div className="aspect-2/3 absolute inset-1 -z-10 overflow-hidden rounded-3xl border border-black/10 lg:aspect-video lg:rounded-[3rem] dark:border-white/5">
-            <Image
-              alt="sa"
-              fill
-              src="https://cdn.dribbble.com/userupload/44179470/file/original-cddeadb84b77c272bba92f932163ea2a.gif"
-            />
+        {/* Centered banner text (two lines) */}
+        <div className="relative min-h-[100vh] flex items-center justify-center px-6">
+          <div className="text-center">
+            <h1 className="text-white text-4xl md:text-6xl font-bold tracking-wide drop-shadow-lg">
+              ẨM THỰC VIỆT NAM
+            </h1>
+            <p className="mt-3 md:mt-4 text-white/90 text-base md:text-lg tracking-wide drop-shadow">
+              'Hương vị truyền thống, tinh hoa đất Việt'
+            </p>
           </div>
         </div>
       </section>
+      <ClientOnly>
+        <AnimatedImagesWithBg />
+      </ClientOnly>
 
-      <section className="space-y-10 py-16 my-20">
-        <h2 className="text-center text-2xl font-bold">Đa dạng các món ăn</h2>
-        {/* Phần dishes list đã được comment lại */}
-      </section>
-
-      <DemoSkiper16 />
-      <footer>
-        <LogoCloud />
-      </footer>
+      <ClientOnly>
+        <BananaTreeSection />
+      </ClientOnly>
+      <ClientOnly>
+        <Logomarquee />
+      </ClientOnly>
     </div>
   );
 }

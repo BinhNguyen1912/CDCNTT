@@ -54,13 +54,18 @@ import AutoPagination from '@/components/auto-pagination';
 import {
   AccountListResType,
   AccountType,
-} from '@/app/schemaValidations/account.schema';
+} from '@/app/SchemaModel/account.schema';
 import { useDeleteMutation, useGetAccountList } from '@/app/queries/useAccount';
 import { toast } from 'react-toastify';
 import { Badge } from '@/components/ui/badge';
 import { getVietnameseRoleStatus } from '@/lib/utils';
+import {
+  getListUsersType,
+  UserType,
+} from '@/app/ValidationSchemas/user.schema';
+import { useAppStore } from '@/components/app-provider';
 
-type AccountItem = AccountListResType['data'][0];
+type AccountItem = getListUsersType['data'][0];
 
 const AccountTableContext = createContext<{
   setEmployeeIdEdit: (value: number) => void;
@@ -76,7 +81,7 @@ const AccountTableContext = createContext<{
 
 //Quyết định nhưng cột của table
 //cell sẽ quyết định trong những ô đó nên là cái gì
-export const columns: ColumnDef<AccountType>[] = [
+export const columns: ColumnDef<AccountItem>[] = [
   {
     accessorKey: 'id',
     header: 'ID',
@@ -99,6 +104,22 @@ export const columns: ColumnDef<AccountType>[] = [
     accessorKey: 'name',
     header: 'Tên',
     cell: ({ row }) => <div className="capitalize">{row.getValue('name')}</div>,
+  },
+  {
+    accessorKey: 'role',
+    header: 'Vai trò',
+    cell: ({ row }) => (
+      <div className="capitalize">
+        {getVietnameseRoleStatus((row.getValue('role') as any).name)}
+      </div>
+    ),
+  },
+  {
+    accessorKey: 'phoneNumber',
+    header: 'Số điện thoại',
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue('phoneNumber')}</div>
+    ),
   },
   {
     accessorKey: 'email',
@@ -164,7 +185,7 @@ function AlertDialogDeleteAccount({
       try {
         const resuft = await mutateAsync(employeeDelete.id);
         setEmployeeDelete(null);
-        toast.success(resuft.payload.message);
+        toast.success('Xóa thành công');
       } catch (error) {
         throw error;
       }
@@ -209,7 +230,7 @@ export default function AccountTable() {
   // const params = Object.fromEntries(searchParam.entries())
   const [employeeIdEdit, setEmployeeIdEdit] = useState<number | undefined>();
   const [employeeDelete, setEmployeeDelete] = useState<AccountItem | null>(
-    null
+    null,
   );
   let data: any[] = [];
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -222,8 +243,29 @@ export default function AccountTable() {
   });
 
   const listAccounts = useGetAccountList();
-  data = listAccounts.data?.payload.data ?? [];
+  console.log('listAccount', listAccounts.data?.payload?.data);
 
+  data = listAccounts.data?.payload?.data || [];
+  const socket = useAppStore((state) => state.socket);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    // lắng nghe sự kiện
+    socket.on('connect', () => {
+      console.log('✅ Socket connected:', socket.id);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('❌ Socket disconnected');
+    });
+
+    // cleanup
+    return () => {
+      socket.off('connect');
+      socket.off('disconnect');
+    };
+  }, [socket]);
   const table = useReactTable({
     data,
     columns,
@@ -297,7 +339,7 @@ export default function AccountTable() {
                           ? null
                           : flexRender(
                               header.column.columnDef.header,
-                              header.getContext()
+                              header.getContext(),
                             )}
                       </TableHead>
                     );
@@ -316,7 +358,7 @@ export default function AccountTable() {
                       <TableCell key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </TableCell>
                     ))}

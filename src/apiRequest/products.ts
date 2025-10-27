@@ -5,15 +5,10 @@ import {
   GetProductDetailType,
   GetProductQuerySchema,
   UpdateProductBodyType,
-} from '@/app/SchemaModel/product.schema';
-import {
-  DishListResType,
-  DishResType,
-  UpdateDishBodyType,
-} from '@/app/schemaValidations/dish.schema';
+} from '@/app/ValidationSchemas/product.schema';
+
 import http from '@/lib/http';
 
-const UserPrefix = '/product';
 const prefix = '/product';
 const ManagerPrefix = '/manage-product/products';
 export const productsApiRequest = {
@@ -44,18 +39,19 @@ export const productsApiRequest = {
   },
   update: (id: number, data: UpdateProductBodyType) =>
     http.put<GetProductDetailType>(`${ManagerPrefix}/${id}`, data),
-  getDish: (id: number) => http.get<DishResType>(`${prefix}/${id}`),
   //Mặc định Next15 thì fetch là {cache: 'no-cache' -> dynamic rendering}, hiện tại Next14 mặc định là {cache: 'force-cache'} nghĩa là cache static rendering
 
   //Bây giờ mình sẽ dùng tag để dùng Fn : RevalidateTag để nó Build cho những file Static Rendering
-  getDishes: () =>
-    http.get<DishListResType>(`${prefix}`, { next: { tags: ['dishes'] } }),
+  getListProduct: () =>
+    http.get<GetListProductsResType>(`${prefix}`, {
+      next: { tags: ['dishes'] },
+    }),
 
   delete: (id: number) =>
     http.delete<GetProductDetailType>(`${ManagerPrefix}/${id}`),
 
   getProduct: (id: number) =>
-    http.get<GetProductDetailType>(`${ManagerPrefix}/${id}`),
+    http.get<GetProductDetailType>(`${prefix}/detail/${id}`),
 };
 
 export default productsApiRequest;

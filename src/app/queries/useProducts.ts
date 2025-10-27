@@ -3,14 +3,13 @@ import productsApiRequest from '@/apiRequest/products';
 import {
   GetManageProductQueryType,
   UpdateProductBodyType,
-} from '@/app/SchemaModel/product.schema';
-import { UpdateDishBodyType } from '@/app/schemaValidations/dish.schema';
+} from '@/app/ValidationSchemas/product.schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const useGetProducts = () => {
   return useQuery({
     queryKey: ['Dishes'],
-    queryFn: dishesApiRequest.getDishes,
+    queryFn: productsApiRequest.getListProduct,
   });
 };
 
@@ -64,19 +63,6 @@ export const useAddProductMutation = () => {
   });
 };
 
-export const useUpdateDishMutation = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, ...body }: UpdateDishBodyType & { id: number }) =>
-      dishesApiRequest.update(id, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['Dishes'],
-        exact: true,
-      });
-    },
-  });
-};
 export const useUpdateProductMutation = () => {
   const queryClient = useQueryClient();
 

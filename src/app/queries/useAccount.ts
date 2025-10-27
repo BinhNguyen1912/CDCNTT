@@ -1,10 +1,16 @@
 import { accountApiRequests } from '@/apiRequest/account';
-import { getProfileDetailResType } from '@/app/SchemaModel/user.schema';
 import {
-  AccountResType,
-  GetGuestListQueryParamsType,
-  UpdateEmployeeAccountBodyType,
-} from '@/app/schemaValidations/account.schema';
+  getProfileDetailResType,
+  UpdateUserBodyType,
+} from '@/app/ValidationSchemas/user.schema';
+import {
+  GuestListQueryType,
+  GuestListType,
+  CreateGuestType,
+  GuestType,
+  CallStaffType,
+} from '@/app/ValidationSchemas/guest.schema';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const useMeProfile = (
@@ -17,7 +23,7 @@ export const useMeProfile = (
         .me()
         .then((res) => {
           if (onSuccess) {
-            onSuccess(res.payload);
+            onSuccess(res.payload as any);
           }
           return res;
         })
@@ -56,7 +62,7 @@ export const useGetEmployeeAccount = ({
 }) => {
   return useQuery({
     queryKey: ['accounts', id],
-    queryFn: () => accountApiRequests.getEmployee(id),
+    queryFn: () => accountApiRequests.getUser(id),
     enabled,
   });
 };
@@ -65,7 +71,7 @@ export const useAddEmployeeAccount = () => {
   const queryClient = useQueryClient();
   return useMutation({
     //useMutation tạo mutation để gọi API thêm nhân viên (accountApiRequests.addEmployee).
-    mutationFn: accountApiRequests.addEmployee,
+    mutationFn: accountApiRequests.addUser,
     onSuccess: () => {
       //onSuccess chạy sau khi API trả về thành công — ở đây bạn gọi queryClient.invalidateQueries({ queryKey: ['accounts'] })
       //invalidateQueries làm gì? Trong React Query, dữ liệu được lưu vào cache và phân loại bằng queryKey.
@@ -94,11 +100,8 @@ export const useAddEmployeeAccount = () => {
 export const useUpdateEmployeeAccount = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      ...body
-    }: UpdateEmployeeAccountBodyType & { id: number }) =>
-      accountApiRequests.updateEmployee(id, body),
+    mutationFn: ({ id, ...body }: UpdateUserBodyType & { id: number }) =>
+      accountApiRequests.updateUser(id, body),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['accounts'],
@@ -111,7 +114,7 @@ export const useUpdateEmployeeAccount = () => {
 export const useDeleteMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: accountApiRequests.deleteEmployee,
+    mutationFn: accountApiRequests.deleteUser,
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['accounts'],
@@ -120,17 +123,28 @@ export const useDeleteMutation = () => {
   });
 };
 
-export const useGetGuestListQuery = (
-  queryParams: GetGuestListQueryParamsType,
-) => {
+export const useGetGuestListQuery = (queryParams: GuestListQueryType) => {
   return useQuery({
     queryKey: ['guests', queryParams],
     queryFn: () => accountApiRequests.guestList(queryParams),
+    staleTime: 1000 * 60 * 5,
   });
 };
 
 export const useCreateGuest = () => {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: accountApiRequests.createGuest,
+    mutationFn: (data: CreateGuestType) => accountApiRequests.createGuest(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['guests'],
+      });
+    },
+  });
+};
+
+export const useCallStaffMutation = () => {
+  return useMutation({
+    mutationFn: (data: CallStaffType) => accountApiRequests.callStaff(data),
   });
 };

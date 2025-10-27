@@ -6,6 +6,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import LowStockWarningDialog from '@/components/lowStockWarningDialog';
+import CallStaffNotification from '@/components/CallStaffNotification';
+
 export default async function Dashboard() {
   return (
     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -19,6 +22,8 @@ export default async function Dashboard() {
             <DashboardMain />
           </CardContent>
         </Card>
+        <LowStockWarningDialog />
+        <CallStaffNotification />
       </div>
     </main>
   );

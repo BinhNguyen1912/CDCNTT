@@ -31,7 +31,8 @@ import {
   VariantOption,
   VariantsType,
   VariantType,
-} from '@/app/SchemaModel/product.schema';
+  UpsertSKUBodyType,
+} from '@/app/ValidationSchemas/product.schema';
 import {
   Popover,
   PopoverContent,
@@ -124,9 +125,8 @@ export default function AddDish() {
 
         // Gọi API upload - giả sử bạn có hàm mediaApiRequest.upload
         const uploadResult = await mediaApiRequest.upload(formData);
-        const imageUrls = uploadResult.payload.data.map(
-          (item: any) => item.url,
-        );
+        const imageUrls =
+          uploadResult?.payload?.data.map((item: any) => item.url) || [];
 
         // Set URL thực vào form
         form.setValue('images', imageUrls);
@@ -207,14 +207,38 @@ export default function AddDish() {
         });
 
         const uploadResult = await mediaApiRequest.upload(formData);
-        finalImageUrls = uploadResult.payload.data.map((item: any) => item.url);
+        finalImageUrls =
+          uploadResult?.payload?.data.map((item: any) => item.url) || [];
+      }
+
+      // Đảm bảo variants và skus luôn đồng bộ
+      let generatedSkus: UpsertSKUBodyType[] = [];
+
+      if (variants.length > 0) {
+        // ✅ Có variants → tạo SKUs từ variants
+        generatedSkus = variants.flatMap((variant) =>
+          variant.valueOption.map((option) => ({
+            price: option.price,
+            image: option.image || '',
+            value: option.value,
+          })),
+        );
+      } else {
+        // ✅ Không có variants → tạo 1 SKU mặc định từ basePrice
+        generatedSkus = [
+          {
+            price: values.basePrice,
+            image: finalImageUrls[0] || '',
+            value: values.name,
+          },
+        ];
       }
 
       const formData: CreateProductBodyType = {
         ...values,
         images: finalImageUrls,
         variants,
-        skus: variants.flatMap((v) => v.valueOption.map((o) => ({ ...o }))),
+        skus: generatedSkus,
       };
       const resuft = await addProductMutation.mutateAsync(formData);
       console.log('resuft:', resuft);

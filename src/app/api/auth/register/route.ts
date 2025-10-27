@@ -3,7 +3,7 @@ import { authApiRequests } from '@/apiRequest/auth';
 import { cookies } from 'next/headers';
 import { HttpError } from '@/lib/http';
 import { decode } from '@/lib/jwt';
-import { RegisterBodyType } from '@/app/SchemaModel/auth.schema';
+import { RegisterBodyType } from '@/app/ValidationSchemas/auth.schema';
 export async function POST(request: Request) {
   const body = (await request.json()) as RegisterBodyType;
 

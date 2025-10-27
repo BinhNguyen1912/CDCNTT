@@ -1,5 +1,5 @@
 import categoriesApiRequest from '@/apiRequest/categories';
-import { UpdateCategoryBodyType } from '@/app/SchemaModel/category.schema';
+import { UpdateCategoryBodyType } from '@/app/ValidationSchemas/category.schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const useGetCategories = () => {

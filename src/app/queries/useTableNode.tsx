@@ -66,7 +66,7 @@ import {
   TableNodeQueryType,
   UpdateTableNodeBodyType,
   UpdateTableNodeBodyBatchType,
-} from '@/app/SchemaModel/table-node.schema';
+} from '@/app/ValidationSchemas/table-node.schema';
 
 // LIST với query params (area, pagination)
 export const useListTableNode = (query?: Partial<TableNodeQueryType>) => {

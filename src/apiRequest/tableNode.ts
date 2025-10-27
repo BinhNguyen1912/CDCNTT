@@ -7,7 +7,7 @@ import {
   UpdateTableNodeBodyType,
   UpdateTableNodeBodyBatchType,
   UpdateTableNodeBodyBatchResType,
-} from '@/app/SchemaModel/table-node.schema';
+} from '@/app/ValidationSchemas/table-node.schema';
 import http from '@/lib/http';
 
 const prefix = '/table-node';

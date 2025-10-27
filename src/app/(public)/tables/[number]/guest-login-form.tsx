@@ -6,10 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  GuestLoginBody,
-  GuestLoginBodyType,
-} from '@/app/schemaValidations/guest.schema';
+
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useGuestLoginMutation } from '@/app/queries/useGuest';
 import { useAppStore } from '@/components/app-provider';
@@ -18,15 +15,19 @@ import { useEffect } from 'react';
 import envConfig from '@/config';
 import { io } from 'socket.io-client';
 import { Loader } from 'lucide-react';
+import {
+  guestLoginSchema,
+  GuestLoginType,
+} from '@/app/ValidationSchemas/guest.schema';
 
 export default function GuestLoginForm() {
   const setRole = useAppStore((state) => state.setRole);
-  // const setSocket = useAppStore((state) => state.setSocket);
+  const setSocket = useAppStore((state) => state.setSocket);
 
   //Lấy ra Path name là dyamic route [number]
   const path = useParams();
   const searchParams = useSearchParams();
-  const tableNumber = Number(path.number);
+  const tableNodeId = Number(path.number);
   const token = searchParams.get('token');
   const loginMutation = useGuestLoginMutation();
   const route = useRouter();
@@ -36,28 +37,37 @@ export default function GuestLoginForm() {
       route.push('/');
     }
   }, [token, route]);
-  const form = useForm<GuestLoginBodyType>({
-    resolver: zodResolver(GuestLoginBody),
+  const form = useForm<GuestLoginType>({
+    resolver: zodResolver(guestLoginSchema),
     defaultValues: {
       name: '',
       token: token ?? '',
-      tableNumber,
+      tableNodeId,
     },
   });
 
-  async function onSubmit(data: GuestLoginBodyType) {
+  async function onSubmit(data: GuestLoginType) {
     if (loginMutation.isPending) return;
 
     try {
       const resuft = await loginMutation.mutateAsync(data);
-      setRole(resuft.payload.data.guest.role);
-      // setSocket(
-      //   io(envConfig.NEXT_PUBLIC_API_ENDPOINT, {
-      //     auth: {
-      //       Authorization: `Bearer ${resuft.payload.data.accessToken}`,
-      //     },
-      //   })
-      // );
+      // Lưu thông tin guest vào localStorage để sử dụng ở các màn khác
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(
+            'guestInfo',
+            JSON.stringify(resuft?.payload?.guest),
+          );
+        }
+      } catch {}
+      setRole(resuft?.payload?.guest.role);
+      setSocket(
+        io(envConfig.NEXT_PUBLIC_API_ENDPOINT, {
+          extraHeaders: {
+            Authorization: `Bearer ${resuft?.payload?.accessToken}`,
+          },
+        }),
+      );
       route.push('/guest/menu');
     } catch (error) {
       handleErrorApi({

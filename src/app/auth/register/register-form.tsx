@@ -14,7 +14,12 @@ import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRegisterMutation } from '@/app/queries/useAuth';
-import { handleErrorApi } from '@/lib/utils';
+import {
+  handleErrorApi,
+  setAccessTokenFormLocalStorage,
+  setRefreshTokenFormLocalStorage,
+  generateSocketIo,
+} from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import { Suspense } from 'react';
@@ -25,13 +30,13 @@ import OTPDialog from '@/app/auth/register/otp-dialog';
 import {
   registerBodySchema,
   RegisterBodyType,
-} from '@/app/SchemaModel/auth.schema';
+} from '@/app/ValidationSchemas/auth.schema';
 import { RoleType } from '@/types/jwt.types';
 
 function Register() {
   const registerMutation = useRegisterMutation();
   const setRole = useAppStore((state) => state.setRole);
-  // const setSocket = useAppStore((state) => state.setSocket);
+  const setSocket = useAppStore((state) => state.setSocket);
   const route = useRouter();
   const registerForm = useForm<RegisterBodyType>({
     resolver: zodResolver(registerBodySchema),
@@ -53,9 +58,15 @@ function Register() {
     if (registerMutation.isPending) return;
     try {
       const resuft = await registerMutation.mutateAsync(values);
-      setRole(resuft.payload.user.roleName as RoleType);
-      // setSocket(generateSocketIo(resuft.payload.data.accessToken));
-      route.push('/');
+
+      if (resuft?.payload) {
+        setAccessTokenFormLocalStorage(resuft.payload.accessToken);
+        setRefreshTokenFormLocalStorage(resuft.payload.refreshToken);
+
+        setRole(resuft.payload.user.roleName as RoleType);
+        setSocket(generateSocketIo(resuft.payload.accessToken));
+        route.push('/');
+      }
     } catch (error) {
       handleErrorApi({
         error,
@@ -72,6 +83,7 @@ function Register() {
           alt="banner"
           fill
           src="https://cdn.dribbble.com/userupload/32239478/file/original-5a6091f0ef159d928b5c596d3713cf65.gif" // bạn thay bằng ảnh bạn up: /public/banner-left.png
+          unoptimized
         />
       </div>
 

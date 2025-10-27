@@ -6,6 +6,8 @@ import {
   Users2,
   Salad,
   Table,
+  Warehouse,
+  AlarmSmoke,
 } from 'lucide-react';
 
 const menuItems = [
@@ -31,9 +33,20 @@ const menuItems = [
     title: 'Món ăn',
     Icon: Salad,
     href: '/manage/products',
-    roles: [Role.ADMIN, Role.STAFF],
+    roles: [Role.ADMIN],
   },
-
+  {
+    title: 'Nguyên Liệu',
+    Icon: Warehouse,
+    href: '/manage/ingredients',
+    roles: [Role.ADMIN],
+  },
+  {
+    title: 'Quản Lý Định Lượng',
+    Icon: AlarmSmoke,
+    href: '/manage/recipes',
+    roles: [Role.ADMIN],
+  },
   {
     title: 'Phân tích',
     Icon: LineChart,
@@ -44,7 +57,7 @@ const menuItems = [
     title: 'Nhân viên',
     Icon: Users2,
     href: '/manage/accounts',
-    roles: [Role.STAFF],
+    roles: [Role.ADMIN],
   },
 ];
 

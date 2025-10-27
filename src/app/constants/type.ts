@@ -48,19 +48,53 @@ export const TableStatusValues = [
 ] as const;
 
 export const OrderStatus = {
-  Pending: 'Pending',
-  Processing: 'Processing',
-  Rejected: 'Rejected',
-  Delivered: 'Delivered',
-  Paid: 'Paid',
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  PREPARING: 'PREPARING',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+  READY: 'READY',
+  PAID: 'PAID',
+} as const;
+
+export const OrderType = {
+  ONLINE: 'ONLINE',
+  AT_TABLE: 'AT_TABLE',
+  RESERVATION: 'RESERVATION',
 } as const;
 
 export const OrderStatusValues = [
-  OrderStatus.Pending,
-  OrderStatus.Processing,
-  OrderStatus.Rejected,
-  OrderStatus.Delivered,
-  OrderStatus.Paid,
+  OrderStatus.PENDING,
+  OrderStatus.CONFIRMED,
+  OrderStatus.PREPARING,
+  OrderStatus.COMPLETED,
+  OrderStatus.CANCELLED,
+  OrderStatus.READY,
+  OrderStatus.PAID,
 ] as const;
 
 export const ManagerRoom = 'manager' as const;
+
+export const PaymentStatus = {
+  SUCCESS: 'SUCCESS',
+  FAILED: 'FAILED',
+  PENDING: 'PENDING',
+} as const;
+
+export const PaymentStatusValues = [
+  PaymentStatus.SUCCESS,
+  PaymentStatus.FAILED,
+  PaymentStatus.PENDING,
+] as const;
+
+export const TypeToOrderStatus = {
+  AT_TABLE: 'AT_TABLE',
+  ONLINE: 'ONLINE',
+  RESERVATION: 'RESERVATION',
+} as const;
+
+export const TypeToOrderStatusValues = [
+  TypeToOrderStatus.AT_TABLE,
+  TypeToOrderStatus.ONLINE,
+  TypeToOrderStatus.RESERVATION,
+] as const;

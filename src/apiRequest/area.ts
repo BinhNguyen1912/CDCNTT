@@ -3,7 +3,7 @@ import {
   AreaResType,
   GetListAreaResType,
   UpdateAreaBodyType,
-} from '@/app/SchemaModel/area.schema';
+} from '@/app/ValidationSchemas/area.schema';
 import http from '@/lib/http';
 const prefix = '/area';
 export const areaRequestApi = {

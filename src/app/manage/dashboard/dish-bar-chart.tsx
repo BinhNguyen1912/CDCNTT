@@ -14,7 +14,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { DashboardIndicatorResType } from '@/app/schemaValidations/indicator.schema';
+import { DashboardIndicatorType } from '@/app/ValidationSchemas/dashboard.model';
 import { useMemo } from 'react';
 
 type ChartConfig = {
@@ -33,66 +33,86 @@ type ChartConfig = {
 // ];
 const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']; // list màu
 export function DishBarChart({
-  dishIndicator,
+  productIndicator = [],
 }: {
-  dishIndicator: Pick<
-    DashboardIndicatorResType['data']['dishIndicator'][0],
+  productIndicator?: Pick<
+    DashboardIndicatorType['productIndicator'][0],
     'id' | 'name' | 'successOrders'
   >[];
 }) {
   const chartConfig: ChartConfig = useMemo(
     () =>
-      dishIndicator.reduce((acc, item, index) => {
+      productIndicator.reduce((acc, item, index) => {
         acc[item.name] = {
           label: item.name,
           color: colors[index % colors.length],
         };
         return acc;
       }, {} as ChartConfig),
-    [dishIndicator]
+    [productIndicator],
   );
 
   // Gắn màu cho từng item (trùng với chartConfig)
   const chartDataWithColor = useMemo(
     () =>
-      dishIndicator.map((item) => ({
+      productIndicator.map((item) => ({
         ...item,
         fill: chartConfig[item.name]?.color ?? 'hsl(var(--chart-1))',
       })),
-    [dishIndicator, chartConfig]
+    [productIndicator, chartConfig],
   );
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
-        <CardTitle>Xếp hạng món ăn</CardTitle>
-        <CardDescription>Được gọi nhiều nhất</CardDescription>
+        <CardTitle className="text-lg font-semibold">Xếp hạng món ăn</CardTitle>
+        <CardDescription className="text-sm text-muted-foreground">
+          Top {productIndicator.length} món được gọi nhiều nhất
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig}>
+      <CardContent className="p-4">
+        <ChartContainer config={chartConfig} className="h-[300px] w-full">
           <BarChart
             accessibilityLayer
             data={chartDataWithColor}
             layout="vertical"
-            margin={{ left: 0 }}
+            margin={{ left: 80, right: 20, top: 20, bottom: 20 }}
+            width={400}
+            height={300}
           >
             <YAxis
               dataKey="name"
               type="category"
               tickLine={false}
-              tickMargin={2}
+              tickMargin={8}
               axisLine={false}
-              tickFormatter={(value) =>
-                chartConfig[value as keyof typeof chartConfig]?.label ?? value
-              }
+              width={70}
+              tickFormatter={(value) => {
+                const label =
+                  chartConfig[value as keyof typeof chartConfig]?.label ??
+                  value;
+                return label.length > 12
+                  ? label.substring(0, 12) + '...'
+                  : label;
+              }}
             />
-            <XAxis dataKey="successOrders" type="number" hide />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+            <XAxis
+              dataKey="successOrders"
+              type="number"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+            />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent />}
+              formatter={(value, name) => [value, 'Đơn hàng']}
+            />
             <Bar
               dataKey="successOrders"
               name="Đơn thanh toán"
               layout="vertical"
-              radius={5}
+              radius={[0, 4, 4, 0]}
             >
               {chartDataWithColor.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />

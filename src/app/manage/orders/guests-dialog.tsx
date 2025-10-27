@@ -1,3 +1,20 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { endOfDay, format, startOfDay } from 'date-fns';
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+
+// UI Components
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,32 +31,26 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import AutoPagination from '@/components/auto-pagination';
-import { useEffect, useState } from 'react';
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
-import { formatDateTimeToLocaleString, simpleMatchText } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
-import { endOfDay, format, startOfDay } from 'date-fns';
-import { GetListGuestsResType } from '@/app/schemaValidations/account.schema';
+import AutoPagination from '@/components/auto-pagination';
+
+// Utils and Services
+import { formatDateTimeToLocaleString, simpleMatchText } from '@/lib/utils';
+import { GuestListType } from '@/app/ValidationSchemas/guest.schema';
 import { useGetGuestListQuery } from '@/app/queries/useAccount';
 
-type GuestItem = GetListGuestsResType['data'][0];
+type GuestItem = GuestListType['data'][0];
 
+// Constants
+const PAGE_SIZE = 10;
+const initFromDate = startOfDay(new Date());
+const initToDate = endOfDay(new Date());
+
+// Table columns definition
 export const columns: ColumnDef<GuestItem>[] = [
   {
     accessorKey: 'name',
-    header: 'Tên',
+    header: 'Tên khách',
     cell: ({ row }) => (
       <div className="capitalize">
         {row.getValue('name')} | (#{row.original.id})
@@ -49,58 +60,65 @@ export const columns: ColumnDef<GuestItem>[] = [
       if (filterValue === undefined) return true;
       return simpleMatchText(
         row.original.name + String(row.original.id),
-        String(filterValue)
+        String(filterValue),
       );
     },
   },
   {
-    accessorKey: 'tableNumber',
-    header: 'Số bàn',
+    accessorKey: 'tableNode',
+    header: 'Bàn',
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue('tableNumber')}</div>
+      <div className="capitalize">{row.original.tableNode?.name || 'N/A'}</div>
     ),
     filterFn: (row, columnId, filterValue: string) => {
       if (filterValue === undefined) return true;
       return simpleMatchText(
-        String(row.original.tableNumber),
-        String(filterValue)
+        String(row.original.tableNode?.name || ''),
+        String(filterValue),
       );
     },
   },
   {
     accessorKey: 'createdAt',
-    header: () => <div>Tạo</div>,
+    header: 'Ngày tạo',
     cell: ({ row }) => (
-      <div className="flex items-center space-x-4 text-sm">
+      <div className="text-sm">
         {formatDateTimeToLocaleString(row.getValue('createdAt'))}
       </div>
     ),
   },
 ];
 
-const PAGE_SIZE = 10;
-const initFromDate = startOfDay(new Date());
-const initToDate = endOfDay(new Date());
-
 export default function GuestsDialog({
   onChoose,
 }: {
   onChoose: (guest: GuestItem) => void;
 }) {
+  // State management
   const [open, setOpen] = useState(false);
   const [fromDate, setFromDate] = useState(initFromDate);
   const [toDate, setToDate] = useState(initToDate);
-  const { data: dataGuests } = useGetGuestListQuery({ fromDate, toDate });
-  const data: GetListGuestsResType['data'] = dataGuests?.payload.data || [];
+
+  // API call
+  const { data: dataGuests, isLoading } = useGetGuestListQuery({
+    limit: 10,
+    page: 1,
+  });
+
+  // Data processing
+  const data: GuestItem[] = dataGuests?.payload?.data || [];
+
+  // Table state
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [pagination, setPagination] = useState({
-    pageIndex: 0, // Gía trị mặc định ban đầu, không có ý nghĩa khi data được fetch bất đồng bộ
-    pageSize: PAGE_SIZE, //default page size
+    pageIndex: 0,
+    pageSize: PAGE_SIZE,
   });
 
+  // Table setup
   const table = useReactTable({
     data,
     columns,
@@ -123,6 +141,7 @@ export default function GuestsDialog({
     },
   });
 
+  // Effects
   useEffect(() => {
     table.setPagination({
       pageIndex: 0,
@@ -130,6 +149,7 @@ export default function GuestsDialog({
     });
   }, [table]);
 
+  // Utility functions
   const choose = (guest: GuestItem) => {
     onChoose(guest);
     setOpen(false);
@@ -149,137 +169,138 @@ export default function GuestsDialog({
         <DialogHeader>
           <DialogTitle>Chọn khách hàng</DialogTitle>
         </DialogHeader>
-        <div>
-          <div className="w-full">
-            <div className="flex flex-wrap gap-2">
-              <div className="flex items-center">
-                <span className="mr-2">Từ</span>
-                <Input
-                  type="datetime-local"
-                  placeholder="Từ ngày"
-                  className="text-sm"
-                  value={format(fromDate, 'yyyy-MM-dd HH:mm').replace(' ', 'T')}
-                  onChange={(event) =>
-                    setFromDate(new Date(event.target.value))
-                  }
-                />
-              </div>
-              <div className="flex items-center">
-                <span className="mr-2">Đến</span>
-                <Input
-                  type="datetime-local"
-                  placeholder="Đến ngày"
-                  value={format(toDate, 'yyyy-MM-dd HH:mm').replace(' ', 'T')}
-                  onChange={(event) => setToDate(new Date(event.target.value))}
-                />
-              </div>
-              <Button
-                className=""
-                variant={'outline'}
-                onClick={resetDateFilter}
-              >
-                Reset
-              </Button>
-            </div>
-            <div className="flex items-center py-4 gap-2">
+
+        <div className="w-full">
+          {/* Date Filters */}
+          <div className="flex flex-wrap gap-2">
+            <div className="flex items-center">
+              <span className="mr-2">Từ</span>
               <Input
-                placeholder="Tên hoặc Id"
-                value={
-                  (table.getColumn('name')?.getFilterValue() as string) ?? ''
-                }
-                onChange={(event) =>
-                  table.getColumn('name')?.setFilterValue(event.target.value)
-                }
-                className="w-[170px]"
-              />
-              <Input
-                placeholder="Số bàn"
-                value={
-                  (table
-                    .getColumn('tableNumber')
-                    ?.getFilterValue() as string) ?? ''
-                }
-                onChange={(event) =>
-                  table
-                    .getColumn('tableNumber')
-                    ?.setFilterValue(event.target.value)
-                }
-                className="w-[80px]"
+                type="datetime-local"
+                placeholder="Từ ngày"
+                className="text-sm"
+                value={format(fromDate, 'yyyy-MM-dd HH:mm').replace(' ', 'T')}
+                onChange={(event) => setFromDate(new Date(event.target.value))}
               />
             </div>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => {
-                        return (
-                          <TableHead key={header.id}>
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
-                          </TableHead>
-                        );
-                      })}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        data-state={row.getIsSelected() && 'selected'}
-                        onClick={() => {
-                          choose(row.original);
-                        }}
-                        className="cursor-pointer"
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id}>
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={columns.length}
-                        className="h-24 text-center"
-                      >
-                        No results.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+            <div className="flex items-center">
+              <span className="mr-2">Đến</span>
+              <Input
+                type="datetime-local"
+                placeholder="Đến ngày"
+                value={format(toDate, 'yyyy-MM-dd HH:mm').replace(' ', 'T')}
+                onChange={(event) => setToDate(new Date(event.target.value))}
+              />
             </div>
-            <div className="flex items-center justify-end space-x-2 py-4">
-              <div className="text-xs text-muted-foreground py-4 flex-1 ">
-                Hiển thị{' '}
-                <strong>{table.getPaginationRowModel().rows.length}</strong>{' '}
-                trong <strong>{data.length}</strong> kết quả
-              </div>
-              <div>
-                <AutoPagination
-                  page={table.getState().pagination.pageIndex + 1}
-                  pageSize={table.getPageCount()}
-                  onClick={(pageNumber) => {
-                    table.setPagination({
-                      pageIndex: pageNumber - 1,
-                      pageSize: PAGE_SIZE,
-                    });
-                  }}
-                  isLink={false}
-                />
-              </div>
+            <Button variant="outline" onClick={resetDateFilter}>
+              Reset
+            </Button>
+          </div>
+
+          {/* Table Filters */}
+          <div className="flex items-center py-4 gap-2">
+            <Input
+              placeholder="Tên hoặc ID"
+              value={
+                (table.getColumn('name')?.getFilterValue() as string) ?? ''
+              }
+              onChange={(event) =>
+                table.getColumn('name')?.setFilterValue(event.target.value)
+              }
+              className="w-[170px]"
+            />
+            <Input
+              placeholder="Tên bàn"
+              value={
+                (table.getColumn('tableNode')?.getFilterValue() as string) ?? ''
+              }
+              onChange={(event) =>
+                table.getColumn('tableNode')?.setFilterValue(event.target.value)
+              }
+              className="w-[120px]"
+            />
+          </div>
+          {/* Guests Table */}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      Đang tải...
+                    </TableCell>
+                  </TableRow>
+                ) : table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && 'selected'}
+                      onClick={() => choose(row.original)}
+                      className="cursor-pointer hover:bg-muted/50"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      Không có khách hàng nào.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          {/* Pagination */}
+          <div className="flex items-center justify-end space-x-2 py-4">
+            <div className="text-xs text-muted-foreground py-4 flex-1">
+              Hiển thị{' '}
+              <strong>{table.getPaginationRowModel().rows.length}</strong> trong{' '}
+              <strong>{data.length}</strong> kết quả
+            </div>
+            <div>
+              <AutoPagination
+                page={table.getState().pagination.pageIndex + 1}
+                pageSize={table.getPageCount()}
+                onClick={(pageNumber) => {
+                  table.setPagination({
+                    pageIndex: pageNumber - 1,
+                    pageSize: PAGE_SIZE,
+                  });
+                }}
+                isLink={false}
+              />
             </div>
           </div>
         </div>

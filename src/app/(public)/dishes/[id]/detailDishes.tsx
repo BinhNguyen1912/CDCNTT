@@ -1,4 +1,4 @@
-import { DishResType } from '@/app/schemaValidations/dish.schema';
+import { DishResType } from '@/app/SchemaModel/dish.schema';
 import { formatCurrency } from '@/lib/utils';
 import Image from 'next/image';
 import React from 'react';

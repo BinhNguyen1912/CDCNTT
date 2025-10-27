@@ -2,26 +2,29 @@
 import {
   GetAccessTokenResType,
   RefreshTokenBodyType,
-} from '@/app/SchemaModel/auth.schema';
-import { LogoutBodyType } from '@/app/schemaValidations/auth.schema';
+} from '@/app/ValidationSchemas/auth.schema';
 import {
-  GuestCreateOrdersBodyType,
-  GuestCreateOrdersResType,
-  GuestGetOrdersResType,
-  GuestLoginBodyType,
-  GuestLoginResType,
-} from '@/app/schemaValidations/guest.schema';
+  GuestLoginType,
+  GuestOrdersListType,
+  GuestResLoginType,
+} from '@/app/ValidationSchemas/guest.schema';
+import {
+  GuestCreateNewOrder,
+  GuestCreateNewOrderType,
+} from '@/app/ValidationSchemas/order.schema';
+import { LogoutBodyType } from '@/app/ValidationSchemas/auth.schema';
+
 import http from '@/lib/http';
 
 export const guestApiRequests = {
   refreshTokenRequest: null as Promise<{
     status: number;
-    payload: GetAccessTokenResType;
+    payload: GetAccessTokenResType | null;
   }> | null,
-  sLogin: (body: GuestLoginBodyType) =>
-    http.post<GuestLoginResType>('/guest/auth/login', body),
-  Login: (body: GuestLoginBodyType) =>
-    http.post<GuestLoginResType>('/api/guest/auth/login', body, {
+  sLogin: (body: GuestLoginType) =>
+    http.post<GuestResLoginType>('/guest/login', body),
+  Login: (body: GuestLoginType) =>
+    http.post<GuestResLoginType>('/api/guest/auth/login', body, {
       baseUrl: '',
     }),
 
@@ -41,7 +44,7 @@ export const guestApiRequests = {
         headers: {
           Authorization: `Bearer ${body.accessToken}`,
         },
-      }
+      },
     ),
 
   sRefreshToken: (body: RefreshTokenBodyType) => {
@@ -59,14 +62,14 @@ export const guestApiRequests = {
       null,
       {
         baseUrl: '',
-      }
+      },
     );
     const resuft = await this.refreshTokenRequest;
     this.refreshTokenRequest = null;
     return resuft;
   },
 
-  order: (data: GuestCreateOrdersBodyType) =>
-    http.post<GuestCreateOrdersResType>('/guest/orders', data),
-  getGuestOrderList: () => http.get<GuestGetOrdersResType>('/guest/orders'),
+  order: (data: GuestCreateNewOrderType) =>
+    http.post<GuestCreateNewOrder>('/guest/new-order', data),
+  getGuestOrderList: () => http.get<GuestOrdersListType>('/guest/orders'),
 };

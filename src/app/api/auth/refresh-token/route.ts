@@ -20,7 +20,16 @@ export async function POST(request: Request) {
   }
   try {
     const payload = await authApiRequests.sRefreshToken({ refreshToken });
-
+    if (!payload.payload) {
+      return Response.json(
+        {
+          message: 'Không tìm thấy Refresh Token',
+        },
+        {
+          status: 401,
+        },
+      );
+    }
     const decodeAccessToken = jwt.decode(payload.payload.accessToken) as {
       exp: number;
     };

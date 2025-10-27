@@ -1,18 +1,17 @@
 import {
-  DashboardIndicatorQueryParamsType,
-  DashboardIndicatorResType,
-} from '@/app/schemaValidations/indicator.schema';
+  DashboardIndicatorQuerySchema,
+  DashboardIndicatorType,
+} from '@/app/ValidationSchemas/dashboard.model';
 import http from '@/lib/http';
-import queryString from 'query-string';
+import { z } from 'zod';
 
 const indicatorApiRequest = {
-  getDashboardIndicators: (queryParams: DashboardIndicatorQueryParamsType) =>
-    http.get<DashboardIndicatorResType>(
-      '/indicators/dashboard?' +
-        queryString.stringify({
-          fromDate: queryParams.fromDate?.toISOString(),
-          toDate: queryParams.toDate?.toISOString(),
-        })
-    ),
+  getDashboardIndicators: (
+    queryParams: z.infer<typeof DashboardIndicatorQuerySchema>,
+  ) =>
+    http.post<DashboardIndicatorType>('/dashboard/indicator', {
+      fromDate: queryParams.fromDate,
+      toDate: queryParams.toDate,
+    }),
 };
 export default indicatorApiRequest;

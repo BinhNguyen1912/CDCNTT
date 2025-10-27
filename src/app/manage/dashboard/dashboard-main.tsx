@@ -7,73 +7,123 @@ import { useEffect, useState } from 'react';
 import { useDashBoardIndicators } from '@/app/queries/useIndicator';
 import { formatCurrency } from '@/lib/utils';
 import { useAppStore } from '@/components/app-provider';
-import { GuestCreateOrdersResType } from '@/app/schemaValidations/guest.schema';
 import { toast } from 'react-toastify';
 import NewOrderSound from '@/components/newOrderSound';
+import LowStockWarningDialog from '@/components/lowStockWarningDialog';
 import { DishBarChart } from '@/app/manage/dashboard/dish-bar-chart';
 import { RevenueAreaChart } from '@/app/manage/dashboard/revenue-line-chart';
+import {
+  GuestCreateNewOrderType,
+  OrderResType,
+} from '@/app/ValidationSchemas/order.schema';
 const initFromDate = startOfDay(new Date());
 const initToDate = endOfDay(new Date());
 export default function DashboardMain() {
   const [fromDate, setFromDate] = useState(initFromDate);
   const [toDate, setToDate] = useState(initToDate);
-  const { data } = useDashBoardIndicators({ fromDate, toDate });
-  const revenue = data?.payload.data.revenue || 0;
-  const guestCount = data?.payload.data.guestCount || 0;
-  const orderCount = data?.payload.data.orderCount || 0;
-  const servingTableCount = data?.payload.data.servingTableCount || 0;
+  const { data, isLoading, error } = useDashBoardIndicators({
+    fromDate: fromDate.toISOString(),
+    toDate: toDate.toISOString(),
+  });
 
-  const revenueByDate = data?.payload.data.revenueByDate || [];
-  const dishIndicator = data?.payload.data.dishIndicator || [];
+  console.log('Dashboard Debug:', {
+    fromDate: fromDate.toISOString(),
+    toDate: toDate.toISOString(),
+    isLoading,
+    error,
+    data,
+  });
+  const revenue = data?.payload?.revenue || 0;
+  const guestCount = data?.payload?.guestCount || 0;
+  const orderCount = data?.payload?.orderCount || 0;
+  const servingTableCount = data?.payload?.servingTableCount || 0;
+
+  const revenueByDate = data?.payload?.revenueByDate || [];
+  const productIndicator = data?.payload?.productIndicator || [];
   const resetDateFilter = () => {
     setFromDate(initFromDate);
     setToDate(initToDate);
   };
-  // const socket = useAppStore((state) => state.socket);
+  const socket = useAppStore((state) => state.socket);
   const [hasNewOrder, setHasNewOrder] = useState(false);
 
-  // useEffect(() => {
-  //   if (socket?.connected) {
-  //     onConnect();
-  //   }
+  useEffect(() => {
+    if (socket?.connected) {
+      onConnect();
+    }
 
-  //   function onConnect() {
-  //     console.log('connected', socket?.id);
-  //   }
-  //   function onDisconnect() {}
+    function onConnect() {
+      console.log('connected', socket?.id);
+    }
+    function onDisconnect() {}
 
-  //   function onNewOrder(data: GuestCreateOrdersResType['data']) {
-  //     const guest = data[0].guest;
-  //     // báo âm thanh
-  //     setHasNewOrder(true);
+    function onNewOrder(data: any) {
+      // Kiểm tra data có tồn tại không
+      if (!data) {
+        console.error('❌ No data received in new-order event');
+        return;
+      }
 
-  //     setTimeout(() => setHasNewOrder(false), 1000); // reset để lần sau phát lại
+      // Xử lý cả trường hợp data là object đơn hoặc mảng
+      let orderData;
+      if (Array.isArray(data)) {
+        if (data.length === 0) {
+          return;
+        }
+        orderData = data[0]; // Lấy đơn hàng đầu tiên
+      } else {
+        orderData = data;
+      }
 
-  //     toast.warning(
-  //       `Khách hàng ${guest?.name} vừa đặt ${data.length} món mới tại bàn ${guest?.tableNumber} `,
-  //       {
-  //         hideProgressBar: true,
-  //         autoClose: 2000,
-  //         icon: false,
-  //       }
-  //     );
-  //   }
+      // Kiểm tra orderData có tồn tại không
+      if (!orderData) {
+        return;
+      }
 
-  //   socket?.on('new-order', onNewOrder);
-  //   //lang nghe
-  //   socket?.on('connect', onConnect);
-  //   //huy lang nghe
-  //   socket?.on('disconnect', onDisconnect);
+      // Kiểm tra orderData có cấu trúc đúng không
+      if (typeof orderData !== 'object') {
+        return;
+      }
 
-  //   // socket?.on('update-order', onUpdateOrder);
-  //   return () => {
-  //     socket?.off('connect', onConnect);
-  //     socket?.off('disconnect', onDisconnect);
+      const guest = orderData?.guest;
+      const tableNode = orderData?.tableNode;
+      const items = orderData?.items;
 
-  //     // socket?.off('update-order', onUpdateOrder);
-  //     socket?.off('new-order', onNewOrder);
-  //   };
-  // }, [fromDate, toDate, socket]);
+      if (!guest) {
+        console.error('❌ No guest found in order data');
+        return;
+      }
+
+      // Báo âm thanh
+      setHasNewOrder(true);
+      setTimeout(() => setHasNewOrder(false), 1000);
+
+      // Hiển thị toast thông báo
+      toast.warning(
+        `Khách hàng ${guest?.name} vừa đặt ${items?.length || 1} món mới tại bàn ${tableNode?.name || 'không xác định'}`,
+        {
+          hideProgressBar: true,
+          autoClose: 2000,
+          icon: false,
+        },
+      );
+    }
+
+    socket?.on('new-order', onNewOrder);
+    //lang nghe
+    socket?.on('connect', onConnect);
+    //huy lang nghe
+    socket?.on('disconnect', onDisconnect);
+
+    // socket?.on('update-order', onUpdateOrder);
+    return () => {
+      socket?.off('connect', onConnect);
+      socket?.off('disconnect', onDisconnect);
+
+      // socket?.off('update-order', onUpdateOrder);
+      socket?.off('new-order', onNewOrder);
+    };
+  }, [socket]);
 
   return (
     <div className="space-y-4">
@@ -198,8 +248,10 @@ export default function DashboardMain() {
           <RevenueAreaChart revenueByDate={revenueByDate} />
         </div>
         <div className="lg:col-span-3">
-          <DishBarChart dishIndicator={dishIndicator} />
+          <DishBarChart productIndicator={productIndicator} />
         </div>
+        <NewOrderSound hasNewOrder={hasNewOrder} />
+        <LowStockWarningDialog />
       </div>
     </div>
   );

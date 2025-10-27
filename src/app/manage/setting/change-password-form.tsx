@@ -15,7 +15,7 @@ import { handleErrorApi } from '@/lib/utils';
 import {
   ChangePassWordBodySchema,
   ChangePasswordBodyType,
-} from '@/app/SchemaModel/profile.schema';
+} from '@/app/ValidationSchemas/profile.schema';
 
 export default function ChangePasswordForm() {
   const ChangePasswordMutaion = useChangePasswordMutation();

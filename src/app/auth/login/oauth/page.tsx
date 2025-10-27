@@ -3,7 +3,11 @@
 import { useSetTokenToCookie } from '@/app/queries/useAuth';
 import { useAppStore } from '@/components/app-provider';
 import { decode } from '@/lib/jwt';
-import { generateSocketIo } from '@/lib/utils';
+import {
+  generateSocketIo,
+  setAccessTokenFormLocalStorage,
+  setRefreshTokenFormLocalStorage,
+} from '@/lib/utils';
 import { RoleType } from '@/types/jwt.types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
@@ -17,7 +21,7 @@ export default function OauthLoginPage() {
   const message = searchParams.get('message');
   const count = useRef(0);
   const setRole = useAppStore((state) => state.setRole);
-  // const setSocket = useAppStore((state) => state.setSocket);
+  const setSocket = useAppStore((state) => state.setSocket);
   const { mutateAsync } = useSetTokenToCookie();
   useEffect(() => {
     if (accessToken && refreshToken) {
@@ -28,8 +32,12 @@ export default function OauthLoginPage() {
           refreshToken,
         })
           .then(() => {
+            // Lưu tokens vào localStorage
+            setAccessTokenFormLocalStorage(accessToken);
+            setRefreshTokenFormLocalStorage(refreshToken);
+
             setRole(roleName as RoleType);
-            // setSocket(generateSocketIo(accessToken));
+            setSocket(generateSocketIo(accessToken));
             route.push('/manage/dashboard');
           })
           .catch((e) => {
@@ -53,7 +61,7 @@ export default function OauthLoginPage() {
     route,
     mutateAsync,
     setRole,
-    // setSocket,
+    setSocket,
   ]);
   return null;
 }

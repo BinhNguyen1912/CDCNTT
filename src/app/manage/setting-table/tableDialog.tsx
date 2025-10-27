@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { TableData, TableStatus } from './types/table';
 import { TableStatusValues } from '@/app/constants/table.constant';
 import { keyof } from 'zod';
+import { getVietnameseTableStatus } from '@/lib/utils';
 
 interface TableDialogProps {
   open: boolean;
@@ -91,7 +92,7 @@ export default function TableDialog({
             >
               {TableStatusValues.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {getVietnameseTableStatus(s)}
                 </option>
               ))}
             </select>

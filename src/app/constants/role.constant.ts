@@ -1,4 +1,4 @@
-import { RoleType } from '@/app/SchemaModel/role.schema';
+import { RoleType } from '@/app/ValidationSchemas/role.schema';
 
 export const REQUEST_ROLE_KEY = 'role';
 export const roleName = {

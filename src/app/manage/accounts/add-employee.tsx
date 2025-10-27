@@ -21,26 +21,40 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   CreateEmployeeAccountBody,
   CreateEmployeeAccountBodyType,
-} from '@/app/schemaValidations/account.schema';
+} from '@/app/SchemaModel/account.schema';
 import { useAddEmployeeAccount } from '@/app/queries/useAccount';
 import { mediaApiRequest } from '@/apiRequest/media';
 import { toast } from 'react-toastify';
 import { handleErrorApi } from '@/lib/utils';
+import {
+  UserBodySchema,
+  UserBodyType,
+} from '@/app/ValidationSchemas/user.schema';
+import { useGetRoleListQuery } from '@/app/queries/useRole';
+
+type CreateUserForm = UserBodyType & {
+  phoneNumber: string;
+  roleId: number;
+  status: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+};
 
 export default function AddEmployee() {
   const [file, setFile] = useState<File | null>(null);
   const [open, setOpen] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const addEmployeeMutation = useAddEmployeeAccount();
-  const form = useForm<CreateEmployeeAccountBodyType>({
-    resolver: zodResolver(CreateEmployeeAccountBody),
+  const roles = useGetRoleListQuery().data?.payload?.data || [];
+  const form = useForm<CreateUserForm>({
+    resolver: zodResolver(UserBodySchema as any),
     defaultValues: {
       name: '',
       email: '',
       avatar: undefined,
       password: '',
-      confirmPassword: '',
-    },
+      phoneNumber: '',
+      roleId: 0,
+      status: 'INACTIVE',
+    } as any,
   });
   const avatar = form.watch('avatar');
   const name = form.watch('name');
@@ -48,27 +62,39 @@ export default function AddEmployee() {
     if (file) {
       return URL.createObjectURL(file);
     }
-    return avatar;
+    return avatar ?? '';
   }, [file, avatar]);
 
   const reset = () => {
     form.reset();
     setFile(null);
   };
-  async function submit(value: CreateEmployeeAccountBodyType) {
+  async function submit(value: CreateUserForm) {
     if (addEmployeeMutation.isPending) return;
     try {
-      let body = value;
+      let body: any = {
+        email: value.email,
+        password: value.password,
+        phoneNumber: value.phoneNumber,
+        name: value.name,
+        roleId: Number(value.roleId),
+        status: value.status,
+      };
       if (file) {
         const formData = new FormData();
-        formData.append('file', file);
-
+        formData.append('files', file);
         const upload = await mediaApiRequest.upload(formData);
-        body = {
-          ...value,
-          avatar: upload.payload.data,
-        };
+        const url =
+          Array.isArray(upload?.payload?.data) && upload.payload.data.length > 0
+            ? upload.payload.data[0].url
+            : '';
+        body.avatar = url;
+      } else if (typeof value.avatar === 'string') {
+        body.avatar = value.avatar;
       }
+
+      console.log('body', body);
+
       await addEmployeeMutation.mutate(body, {
         onSuccess: () => {
           reset();
@@ -80,7 +106,9 @@ export default function AddEmployee() {
             error,
             setError: form.setError,
           });
-          toast.error(error.response.data.payload.message);
+          toast.error(
+            error?.response?.data?.payload?.message || 'Lỗi tạo tài khoản',
+          );
         },
       });
     } catch (error) {
@@ -121,7 +149,7 @@ export default function AddEmployee() {
                   <FormItem>
                     <div className="flex gap-2 items-start justify-start">
                       <Avatar className="aspect-square w-[100px] h-[100px] rounded-md object-cover">
-                        <AvatarImage src={previewAvatarFromFile} />
+                        <AvatarImage src={previewAvatarFromFile ?? ''} />
                         <AvatarFallback className="rounded-none">
                           {name || 'Avatar'}
                         </AvatarFallback>
@@ -135,7 +163,7 @@ export default function AddEmployee() {
                           if (file) {
                             setFile(file);
                             field.onChange(
-                              'http://localhost:3000/' + file.name
+                              'http://localhost:3000/' + file.name,
                             );
                           }
                         }}
@@ -169,6 +197,7 @@ export default function AddEmployee() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="email"
@@ -184,6 +213,80 @@ export default function AddEmployee() {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center justify-items-start gap-4">
+                      <Label htmlFor="phoneNumber">Số điện thoại</Label>
+                      <div className="col-span-3 w-full space-y-2">
+                        <Input id="phoneNumber" className="w-full" {...field} />
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="roleId"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center justify-items-start gap-4">
+                      <Label htmlFor="roleId">Vai trò</Label>
+                      <div className="col-span-3 w-full space-y-2">
+                        <select
+                          id="roleId"
+                          className="w-full border rounded px-2 py-1"
+                          value={String(field.value ?? 0)}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
+                        >
+                          <option value={0}>Chọn vai trò</option>
+                          {roles.map((role: any) => {
+                            if (role.name === 'GUEST') return null;
+                            return (
+                              <option key={role.id} value={role.id}>
+                                {role.name}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center justify-items-start gap-4">
+                      <Label htmlFor="status">Trạng thái</Label>
+                      <div className="col-span-3 w-full space-y-2">
+                        <select
+                          id="status"
+                          {...field}
+                          className="w-full border rounded px-2 py-1"
+                        >
+                          <option value="ACTIVE">Hoạt động</option>
+                          <option value="INACTIVE">Không hoạt động</option>
+                          <option value="BLOCKED">Bị khóa</option>
+                        </select>
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="password"
@@ -194,26 +297,6 @@ export default function AddEmployee() {
                       <div className="col-span-3 w-full space-y-2">
                         <Input
                           id="password"
-                          className="w-full"
-                          type="password"
-                          {...field}
-                        />
-                        <FormMessage />
-                      </div>
-                    </div>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="grid grid-cols-4 items-center justify-items-start gap-4">
-                      <Label htmlFor="confirmPassword">Xác nhận mật khẩu</Label>
-                      <div className="col-span-3 w-full space-y-2">
-                        <Input
-                          id="confirmPassword"
                           className="w-full"
                           type="password"
                           {...field}

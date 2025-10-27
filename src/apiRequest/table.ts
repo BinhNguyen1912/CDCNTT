@@ -3,13 +3,14 @@ import {
   TableDetailResType,
   TableListResType,
   UpdateTableBodyType,
-} from '@/app/SchemaModel/table.schema';
+} from '@/app/ValidationSchemas/table.schema';
 
 import http from '@/lib/http';
 
 const prefix = '/tables';
 export const tableRequestApi = {
-  list: () => http.get<TableListResType>(`${prefix}`),
+  list: (params?: { areaId?: number }) =>
+    http.get<TableListResType>(`${prefix}`),
   getDetail: (id: number) =>
     http.get<TableDetailResType>(`${prefix}/getTableDetail/${id}`),
   create: (data: CreateTableBodyType) =>

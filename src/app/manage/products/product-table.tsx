@@ -61,7 +61,7 @@ import {
   useDeleteProductMutation,
   useGetProductListManager,
 } from '@/app/queries/useProducts';
-import { GetListProductsResType } from '@/app/SchemaModel/product.schema';
+import { GetListProductsResType } from '@/app/ValidationSchemas/product.schema';
 import { LockKeyhole, LockKeyholeOpen } from 'lucide-react';
 
 type ProductItem = GetListProductsResType['data'][0];

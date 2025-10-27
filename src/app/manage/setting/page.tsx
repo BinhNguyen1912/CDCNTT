@@ -1,6 +1,7 @@
 import ChangePasswordForm from '@/app/manage/setting/change-password-form';
 import UpdateProfileForm from '@/app/manage/setting/update-profile-form';
 import { Badge } from '@/components/ui/badge';
+import LowStockWarningDialog from '@/components/lowStockWarningDialog';
 
 export default function Setting() {
   return (
@@ -15,6 +16,7 @@ export default function Setting() {
           <UpdateProfileForm />
           <ChangePasswordForm />
         </div>
+        <LowStockWarningDialog />
       </div>
     </main>
   );

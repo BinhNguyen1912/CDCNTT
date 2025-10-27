@@ -5,10 +5,12 @@ export default function QrCodeTable({
   tableNumber,
   token,
   width = 250,
+  tableName,
 }: {
   tableNumber: number;
   token: string;
   width?: number;
+  tableName: string;
 }) {
   /**
    * Hiện tại thư viện QRCode đang vẽ lên thẻ canvas
@@ -30,15 +32,11 @@ export default function QrCodeTable({
     canvasContext.font = '15px Arial';
     canvasContext.fillStyle = 'black';
     canvasContext.textAlign = 'center';
-    canvasContext.fillText(
-      `Table ${tableNumber}`,
-      canvas.width / 2,
-      canvas.width + 15
-    );
+    canvasContext.fillText(`${tableName}`, canvas.width / 2, canvas.width + 15);
     canvasContext.fillText(
       `Quét QR để gọi món`,
       canvas.width / 2,
-      canvas.width + 40
+      canvas.width + 40,
     );
 
     const canvasVirtual = document.createElement('canvas');
@@ -53,7 +51,7 @@ export default function QrCodeTable({
       function (error) {
         if (error) console.error(error);
         canvasContext.drawImage(canvasVirtual, 0, 0, width, width);
-      }
+      },
     );
   });
   return <canvas ref={refCanvas} className="mx-auto" width={width} />;

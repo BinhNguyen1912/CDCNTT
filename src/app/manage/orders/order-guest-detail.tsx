@@ -1,11 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 'use client';
 import { OrderStatus } from '@/app/constants/type';
-import { usePayGuestOrders } from '@/app/queries/useOrder';
-import {
-  GetOrdersResType,
-  PayGuestOrdersResType,
-} from '@/app/schemaValidations/order.schema';
+// import { usePayGuestOrders } from '@/app/queries/useOrder';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,109 +13,147 @@ import {
   getVietnameseOrderStatus,
   handleErrorApi,
 } from '@/lib/utils';
+import { ALargeSmall, CookingPot, HandCoins, Loader } from 'lucide-react';
 import Image from 'next/image';
 import { Fragment } from 'react';
+import { OrdersListResType } from '@/app/ValidationSchemas/order.schema';
+import { usePayOrdersByGuestMutation } from '@/app/queries/useOrder';
+import { toast } from 'react-toastify';
 
-type Guest = GetOrdersResType['data'][0]['guest'];
-type Orders = GetOrdersResType['data'];
+type Guest = OrdersListResType['data'][0]['guest'];
+type Orders = OrdersListResType['data'];
 export default function OrderGuestDetail({
   guest,
   orders,
-  onSuccess,
+  refetch,
 }: {
-  guest: Guest;
-  orders: Orders;
-  onSuccess?: (data: PayGuestOrdersResType) => void;
+  guest?: Guest;
+  orders?: Orders;
+  refetch?: () => void;
 }) {
-  const ordersFilterToPurchase = guest
-    ? orders.filter(
+  const safeGuest = guest!;
+  const safeOrders = orders!;
+
+  const ordersFilterToPurchase = safeGuest
+    ? safeOrders.filter(
         (order) =>
-          order.status !== OrderStatus.Paid &&
-          order.status !== OrderStatus.Rejected
+          order.status !== OrderStatus.COMPLETED &&
+          order.status !== OrderStatus.CANCELLED,
       )
     : [];
-  const purchasedOrderFilter = guest
-    ? orders.filter((order) => order.status === OrderStatus.Paid)
+  const purchasedOrderFilter = safeGuest
+    ? safeOrders.filter((order) => order.status === OrderStatus.COMPLETED)
     : [];
 
-  const usePayForGuest = usePayGuestOrders();
+  const usePayForGuest = usePayOrdersByGuestMutation();
+
   const pay = async () => {
-    if (usePayForGuest.isPending || !guest) return;
+    if (usePayForGuest.isPending || !safeGuest) return;
     try {
-      const resuft = await usePayForGuest.mutateAsync({ guestId: guest.id });
-      onSuccess && onSuccess(resuft.payload);
+      const result = await usePayForGuest.mutateAsync(safeGuest.id);
+
+      // Show success toast
+      toast.success(
+        `Đã thanh toán thành công ${ordersFilterToPurchase.length} đơn hàng cho khách ${safeGuest.name}!`,
+        {
+          hideProgressBar: true,
+          autoClose: 3000,
+        },
+      );
+
+      // Refresh orders list
+      if (refetch) {
+        await refetch();
+        toast.info('Đang làm mới dữ liệu...', {
+          autoClose: 1000,
+        });
+      }
     } catch (error) {
-      handleErrorApi({
-        error,
-      });
+      handleErrorApi({ error });
     }
   };
   return (
     <div className="space-y-2 text-sm">
-      {guest && (
+      {safeGuest && (
         <Fragment>
           <div className="space-x-1">
             <span className="font-semibold">Tên:</span>
-            <span>{guest.name}</span>
-            <span className="font-semibold">(#{guest.id})</span>
+            <span>{safeGuest.name}</span>
+            <span className="font-semibold">(#{safeGuest.id})</span>
             <span>|</span>
-            <span className="font-semibold">Bàn:</span>
-            <span>{guest.tableNumber}</span>
-          </div>
-          <div className="space-x-1">
-            <span className="font-semibold">Ngày đăng ký:</span>
-            <span>{formatDateTimeToLocaleString(guest.createdAt)}</span>
+            <span className="font-semibold">Tên bàn:</span>
+            <span>{safeGuest.tableNode?.name}</span>
           </div>
         </Fragment>
       )}
 
       <div className="space-y-1">
         <div className="font-semibold">Đơn hàng:</div>
-        {orders.map((order, index) => {
+        {safeOrders.map((order, index) => {
+          // Kiểm tra nếu order không có items hoặc items rỗng
+          if (!order.items || order.items.length === 0) {
+            return (
+              <div key={order.id} className="flex gap-2 items-center text-xs">
+                <span className="w-[10px]">{index + 1}</span>
+                <span>Không có sản phẩm</span>
+              </div>
+            );
+          }
+
+          const firstItem = order.items[0];
+          const productImages = firstItem.product?.images || [];
+          const defaultImage = firstItem.image || '/placeholder.png';
+
           return (
             <div key={order.id} className="flex gap-2 items-center text-xs">
               <span className="w-[10px]">{index + 1}</span>
               <span title={getVietnameseOrderStatus(order.status)}>
-                {order.status === OrderStatus.Pending && (
-                  <OrderStatusIcon.Pending className="w-4 h-4" />
+                {order.status === OrderStatus.PENDING && (
+                  <Loader className="w-4 h-4" />
                 )}
-                {order.status === OrderStatus.Processing && (
-                  <OrderStatusIcon.Processing className="w-4 h-4" />
+                {order.status === OrderStatus.CONFIRMED && (
+                  <HandCoins className="w-4 h-4" />
                 )}
-                {order.status === OrderStatus.Rejected && (
-                  <OrderStatusIcon.Rejected className="w-4 h-4 text-red-400" />
+                {order.status === OrderStatus.CANCELLED && (
+                  <ALargeSmall className="w-4 h-4 text-red-400" />
                 )}
-                {order.status === OrderStatus.Delivered && (
+                {order.status === OrderStatus.PREPARING && (
+                  <CookingPot className="w-4 h-4 text-red-400" />
+                )}
+                {/* {order.status === OrderStatus.Delivered && (
                   <OrderStatusIcon.Delivered className="w-4 h-4" />
                 )}
                 {order.status === OrderStatus.Paid && (
                   <OrderStatusIcon.Paid className="w-4 h-4 text-yellow-400" />
-                )}
+                )} */}
               </span>
               <Image
-                src={order.dishSnapshot.image}
-                alt={order.dishSnapshot.name}
-                title={order.dishSnapshot.name}
+                src={productImages[0] || defaultImage}
+                alt={firstItem.productName}
+                title={firstItem.productName}
                 width={30}
                 height={30}
                 className="h-[30px] w-[30px] rounded object-cover"
               />
               <span
                 className="truncate w-[70px] sm:w-[100px]"
-                title={order.dishSnapshot.name}
+                title={firstItem.productName}
               >
-                {order.dishSnapshot.name}
+                {firstItem.productName}-{firstItem.skuValue}
               </span>
-              <span className="font-semibold" title={`Tổng: ${order.quantity}`}>
-                x{order.quantity}
+              <span
+                className="font-semibold"
+                title={`Tổng: ${firstItem.quantity}`}
+              >
+                x{firstItem.quantity}
               </span>
               <span className="italic">
-                {formatCurrency(order.quantity * order.dishSnapshot.price)}
+                {formatCurrency(firstItem.quantity * firstItem.skuPrice)}
               </span>
               <span
                 className="hidden sm:inline"
                 title={`Tạo: ${formatDateTimeToLocaleString(
-                  order.createdAt
+                  order.createdAt,
                 )} | Cập nhật: ${formatDateTimeToLocaleString(order.updatedAt)}
           `}
               >
@@ -127,7 +162,7 @@ export default function OrderGuestDetail({
               <span
                 className="sm:hidden"
                 title={`Tạo: ${formatDateTimeToLocaleString(
-                  order.createdAt
+                  order.createdAt,
                 )} | Cập nhật: ${formatDateTimeToLocaleString(order.updatedAt)}
           `}
               >
@@ -144,8 +179,9 @@ export default function OrderGuestDetail({
           <span>
             {formatCurrency(
               ordersFilterToPurchase.reduce((acc, order) => {
-                return acc + order.quantity * order.dishSnapshot.price;
-              }, 0)
+                if (!order.items || order.items.length === 0) return acc;
+                return acc + order.items[0].quantity * order.items[0].skuPrice;
+              }, 0),
             )}
           </span>
         </Badge>
@@ -156,8 +192,9 @@ export default function OrderGuestDetail({
           <span>
             {formatCurrency(
               purchasedOrderFilter.reduce((acc, order) => {
-                return acc + order.quantity * order.dishSnapshot.price;
-              }, 0)
+                if (!order.items || order.items.length === 0) return acc;
+                return acc + order.items[0].quantity * order.items[0].skuPrice;
+              }, 0),
             )}
           </span>
         </Badge>

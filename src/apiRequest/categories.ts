@@ -4,8 +4,7 @@ import {
   GetAllCategoryType,
   GetCategoryDetailType,
   UpdateCategoryBodyType,
-} from '@/app/SchemaModel/category.schema';
-import { MessageResType } from '@/app/schemaValidations/common.schema';
+} from '@/app/ValidationSchemas/category.schema';
 import http from '@/lib/http';
 
 const prefix = '/category';
@@ -24,7 +23,7 @@ export const categoriesApiRequest = {
       next: { tags: ['categories'] },
     }),
 
-  delete: (id: number) => http.delete<MessageResType>(`${prefix}/${id}`),
+  delete: (id: number) => http.delete<{ message: string }>(`${prefix}/${id}`),
 };
 
 export default categoriesApiRequest;

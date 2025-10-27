@@ -17,10 +17,10 @@ import { handleErrorApi } from '@/lib/utils';
 import {
   UpdateMeBodySchema,
   UpdateMeBodyType,
-} from '@/app/SchemaModel/profile.schema';
+} from '@/app/ValidationSchemas/profile.schema';
 import { Badge } from '@/components/ui/badge';
 import { getVietNameseRole, roleNameType } from '@/app/constants/role.constant';
-import { RoleType } from '@/app/SchemaModel/role.schema';
+import { RoleType } from '@/app/ValidationSchemas/role.schema';
 
 export default function UpdateProfileForm() {
   const [file, setFile] = useState<File | undefined>(undefined);

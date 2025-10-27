@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'react-toastify';
-import { AreaType } from '@/app/SchemaModel/area.schema';
+import { AreaType } from '@/app/ValidationSchemas/area.schema';
 import EditAreaDialog from '@/app/manage/setting-table/editAreaDialog';
 
 interface AreaTagsProps {

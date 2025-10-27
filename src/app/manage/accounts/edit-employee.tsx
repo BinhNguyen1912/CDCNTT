@@ -27,7 +27,7 @@ import { Switch } from '@/components/ui/switch';
 import {
   UpdateEmployeeAccountBody,
   UpdateEmployeeAccountBodyType,
-} from '@/app/schemaValidations/account.schema';
+} from '@/app/SchemaModel/account.schema';
 import { Role, RoleValues } from '@/app/constants/type';
 import {
   useGetEmployeeAccount,
@@ -45,6 +45,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  UpdateUserBodySchema,
+  UpdateUserBodyType,
+  UserTypeWithRolePermissions,
+} from '@/app/ValidationSchemas/user.schema';
+import { useGetRoleListQuery } from '@/app/queries/useRole';
+import { z } from 'zod';
 
 export default function EditEmployee({
   id,
@@ -61,18 +68,24 @@ export default function EditEmployee({
     id: id as number,
     enabled: Boolean(id),
   });
+  const roles = useGetRoleListQuery().data?.payload?.data || [];
+  console.log('roles', roles);
+
+  const dataUser = data?.payload;
   const updateAccountMutation = useUpdateEmployeeAccount();
 
-  const form = useForm<UpdateEmployeeAccountBodyType>({
-    resolver: zodResolver(UpdateEmployeeAccountBody),
+  const form = useForm<UpdateUserBodyType>({
+    resolver: zodResolver(UpdateUserBodySchema),
     defaultValues: {
-      name: '',
-      email: '',
-      avatar: undefined,
-      password: undefined,
-      confirmPassword: undefined,
       changePassword: false,
-      role: Role.Employee,
+      email: '',
+      name: '',
+      roleId: 0,
+      avatar: '',
+      confirmNewPassword: undefined,
+      newPassword: undefined,
+      phoneNumber: '',
+      status: 'ACTIVE',
     },
   });
 
@@ -89,39 +102,50 @@ export default function EditEmployee({
 
   useEffect(() => {
     if (data) {
-      const { avatar, email, name, role } = data.payload.data;
+      const { email, name, roleId, status, phoneNumber, avatar } =
+        (dataUser as UserTypeWithRolePermissions) || {};
       form.reset({
-        avatar: avatar ?? undefined,
-        email,
-        name,
-        changePassword: form.getValues('changePassword'),
-        password: form.getValues('password'),
-        confirmPassword: form.getValues('confirmPassword'),
-        role,
+        avatar: avatar ?? '',
+        email: email ?? '',
+        name: name ?? '',
+        changePassword: false,
+        confirmNewPassword: '',
+        newPassword: '',
+        roleId: roleId ?? 0,
+        status: (status as 'ACTIVE' | 'INACTIVE' | 'BLOCKED') || 'ACTIVE',
+        phoneNumber: phoneNumber ?? '',
       });
     }
   }, [data, form]);
-  async function submit(value: UpdateEmployeeAccountBodyType) {
+
+  async function submit(value: UpdateUserBodyType) {
     let body = { id: id as number, ...value };
     try {
       if (file) {
         const formData = new FormData();
         formData.append('file', file);
         const upload = await mediaApiRequest.upload(formData);
-
-        const imageURL = upload.payload.data;
-
-        body = {
-          ...body,
-          avatar: imageURL,
-        };
+        const imageURL = upload?.payload?.data;
+        if (Array.isArray(imageURL) && imageURL.length > 0) {
+          body = {
+            ...body,
+            avatar: imageURL[0].url || '',
+          };
+        } else {
+          toast.error('Failed to upload avatar. Please try again.');
+          return;
+        }
       }
-
-      const resuft = await updateAccountMutation.mutateAsync(body);
-      toast.success(resuft.payload.message, {
-        hideProgressBar: true,
-        autoClose: 1000,
-      });
+      if (!value.changePassword) {
+        delete body.newPassword;
+        delete body.confirmNewPassword;
+      }
+      if (!body.status) body.status = 'ACTIVE';
+      if (!body.roleId) body.roleId = 0;
+      if (!body.phoneNumber) body.phoneNumber = '';
+      if (!body.avatar) body.avatar = '';
+      const result = await updateAccountMutation.mutateAsync(body);
+      toast.success('Cập nhật thành công');
       reset();
       onSubmitSuccess?.();
     } catch (error) {
@@ -168,7 +192,7 @@ export default function EditEmployee({
                   <FormItem>
                     <div className="flex gap-2 items-start justify-start">
                       <Avatar className="aspect-square w-[100px] h-[100px] rounded-md object-cover">
-                        <AvatarImage src={previewAvatarFromFile} />
+                        <AvatarImage src={previewAvatarFromFile ?? ''} />
                         <AvatarFallback className="rounded-none">
                           {name || 'Avatar'}
                         </AvatarFallback>
@@ -182,7 +206,7 @@ export default function EditEmployee({
                           if (file) {
                             setFile(file);
                             field.onChange(
-                              'http://localhost:3000/' + file.name
+                              'http://localhost:3000/' + file.name,
                             );
                           }
                         }}
@@ -200,7 +224,6 @@ export default function EditEmployee({
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="name"
@@ -209,7 +232,12 @@ export default function EditEmployee({
                     <div className="grid grid-cols-4 items-center justify-items-start gap-4">
                       <Label htmlFor="name">Tên</Label>
                       <div className="col-span-3 w-full space-y-2">
-                        <Input id="name" className="w-full" {...field} />
+                        <Input
+                          id="name"
+                          className="w-full"
+                          {...field}
+                          value={field.value ?? ''}
+                        />
                         <FormMessage />
                       </div>
                     </div>
@@ -224,7 +252,12 @@ export default function EditEmployee({
                     <div className="grid grid-cols-4 items-center justify-items-start gap-4">
                       <Label htmlFor="email">Email</Label>
                       <div className="col-span-3 w-full space-y-2">
-                        <Input id="email" className="w-full" {...field} />
+                        <Input
+                          id="email"
+                          className="w-full"
+                          {...field}
+                          value={field.value ?? ''}
+                        />
                         <FormMessage />
                       </div>
                     </div>
@@ -233,35 +266,73 @@ export default function EditEmployee({
               />
               <FormField
                 control={form.control}
-                name="role"
+                name="phoneNumber"
                 render={({ field }) => (
                   <FormItem>
                     <div className="grid grid-cols-4 items-center justify-items-start gap-4">
-                      <Label htmlFor="description">Vai trò</Label>
+                      <Label htmlFor="phoneNumber">Số điện thoại</Label>
                       <div className="col-span-3 w-full space-y-2">
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Chọn vai trò" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {RoleValues.map((role) => {
-                              if (role == Role.Guest) return null;
-                              return (
-                                <SelectItem key={role} value={role}>
-                                  {role}
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
+                        <Input
+                          id="phoneNumber"
+                          className="w-full"
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                        <FormMessage />
                       </div>
-
-                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center justify-items-start gap-4">
+                      <Label htmlFor="status">Trạng thái</Label>
+                      <div className="col-span-3 w-full space-y-2">
+                        <select
+                          id="status"
+                          {...field}
+                          value={
+                            field.value as 'ACTIVE' | 'INACTIVE' | 'BLOCKED'
+                          }
+                          className="w-full border rounded px-2 py-1"
+                        >
+                          <option value="ACTIVE">Hoạt động</option>
+                          <option value="INACTIVE">Không hoạt động</option>
+                          <option value="BLOCKED">Bị khóa</option>
+                        </select>
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="roleId"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center justify-items-start gap-4">
+                      <Label htmlFor="roleId">Vai trò</Label>
+                      <div className="col-span-3 w-full space-y-2">
+                        <select
+                          id="roleId"
+                          {...field}
+                          value={field.value ?? 0}
+                          className="w-full border rounded px-2 py-1"
+                        >
+                          <option value={0}>Chọn vai trò</option>
+                          {roles.map((role) => (
+                            <option key={role.id} value={role.id}>
+                              {role.name}
+                            </option>
+                          ))}
+                        </select>
+                        <FormMessage />
+                      </div>
                     </div>
                   </FormItem>
                 )}
@@ -272,7 +343,7 @@ export default function EditEmployee({
                 render={({ field }) => (
                   <FormItem>
                     <div className="grid grid-cols-4 items-center justify-items-start gap-4">
-                      <Label htmlFor="email">Đổi mật khẩu</Label>
+                      <Label htmlFor="changePassword">Đổi mật khẩu</Label>
                       <div className="col-span-3 w-full space-y-2">
                         <Switch
                           checked={field.value}
@@ -285,50 +356,52 @@ export default function EditEmployee({
                 )}
               />
               {changePassword && (
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="grid grid-cols-4 items-center justify-items-start gap-4">
-                        <Label htmlFor="password">Mật khẩu mới</Label>
-                        <div className="col-span-3 w-full space-y-2">
-                          <Input
-                            id="password"
-                            className="w-full"
-                            type="password"
-                            {...field}
-                          />
-                          <FormMessage />
+                <>
+                  <FormField
+                    control={form.control}
+                    name="newPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center justify-items-start gap-4">
+                          <Label htmlFor="newPassword">Mật khẩu mới</Label>
+                          <div className="col-span-3 w-full space-y-2">
+                            <Input
+                              id="newPassword"
+                              className="w-full"
+                              type="password"
+                              {...field}
+                              value={field.value ?? ''}
+                            />
+                            <FormMessage />
+                          </div>
                         </div>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              )}
-              {changePassword && (
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="grid grid-cols-4 items-center justify-items-start gap-4">
-                        <Label htmlFor="confirmPassword">
-                          Xác nhận mật khẩu mới
-                        </Label>
-                        <div className="col-span-3 w-full space-y-2">
-                          <Input
-                            id="confirmPassword"
-                            className="w-full"
-                            type="password"
-                            {...field}
-                          />
-                          <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="confirmNewPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center justify-items-start gap-4">
+                          <Label htmlFor="confirmNewPassword">
+                            Xác nhận mật khẩu mới
+                          </Label>
+                          <div className="col-span-3 w-full space-y-2">
+                            <Input
+                              id="confirmNewPassword"
+                              className="w-full"
+                              type="password"
+                              {...field}
+                              value={field.value ?? ''}
+                            />
+                            <FormMessage />
+                          </div>
                         </div>
-                      </div>
-                    </FormItem>
-                  )}
-                />
+                      </FormItem>
+                    )}
+                  />
+                </>
               )}
             </div>
           </form>

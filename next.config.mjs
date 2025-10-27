@@ -39,6 +39,26 @@ const nextConfig = {
         hostname: 'nhahang.ai',
         pathname: '/**',
       },
+      {
+        protocol: 'http',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'vietnamdasac.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'aban.com.vn',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'backimthang.vn',
+        pathname: '/**',
+      },
     ],
   },
 };

@@ -1,28 +1,31 @@
 import {
   ChangePasswordBodyType,
   UpdateMeBodyType,
-} from '@/app/SchemaModel/profile.schema';
+} from '@/app/ValidationSchemas/profile.schema';
 import {
+  getListUsersType,
   getProfileDetailResType,
   UpdateProfileResType,
-} from '@/app/SchemaModel/user.schema';
+  UpdateUserBodyType,
+  UserBodyType,
+  UserType,
+  UserTypeWithRolePermissions,
+} from '@/app/ValidationSchemas/user.schema';
 import {
-  AccountListResType,
-  AccountResType,
-  CreateEmployeeAccountBodyType,
-  CreateGuestBodyType,
-  CreateGuestResType,
-  GetGuestListQueryParamsType,
-  GetListGuestsResType,
-  UpdateEmployeeAccountBodyType,
-} from '@/app/schemaValidations/account.schema';
+  GuestListQueryType,
+  GuestListType,
+  CreateGuestType,
+  GuestType,
+  CallStaffType,
+} from '@/app/ValidationSchemas/guest.schema';
+
 import http from '@/lib/http';
 import queryString from 'query-string';
 const prefix = '/profile';
+const userProfix = '/users';
 export const accountApiRequests = {
   me: () => http.get<getProfileDetailResType>(`${prefix}`),
   update: (data: UpdateMeBodyType) => {
-    console.log('data', data);
     return http.put<UpdateProfileResType>(`${prefix}/update-profile`, data);
   },
   changePassword: (body: ChangePasswordBodyType) =>
@@ -33,24 +36,22 @@ export const accountApiRequests = {
         Authorization: `Bearer ${accessToken}`,
       },
     }),
-  list: () => http.get<AccountListResType>(`${prefix}`, {}),
-  addEmployee: (body: CreateEmployeeAccountBodyType) =>
-    http.post<AccountResType>(`${prefix}`, body),
-  updateEmployee: (id: number, body: UpdateEmployeeAccountBodyType) =>
-    http.put<AccountResType>(`${prefix}/detail/${id}`, body),
-  getEmployee: (id: number) =>
-    http.get<AccountResType>(`${prefix}/detail/${id}`),
-  deleteEmployee: (id: number) =>
-    http.delete<AccountResType>(`${prefix}/detail/${id}`),
-
-  guestList: (queryParams: GetGuestListQueryParamsType) =>
-    http.get<GetListGuestsResType>(
-      `${prefix}/guests?` +
+  list: () => http.get<getListUsersType>(`${userProfix}`, {}),
+  addUser: (body: UserBodyType) => http.post<UserType>(`${userProfix}`, body),
+  updateUser: (id: number, body: UpdateUserBodyType) =>
+    http.put<UpdateProfileResType>(`${userProfix}/${id}`, body),
+  getUser: (id: number) =>
+    http.get<UserTypeWithRolePermissions>(`${userProfix}/${id}`),
+  deleteUser: (id: number) => http.delete<UserType>(`${userProfix}/${id}`),
+  guestList: (queryParams: GuestListQueryType) =>
+    http.get<GuestListType>(
+      `/guest/listGuests?` +
         queryString.stringify({
-          fromDate: queryParams.fromDate?.toISOString(),
-          toDate: queryParams.toDate?.toISOString(),
+          page: queryParams.page,
+          limit: queryParams.limit,
         }),
     ),
-  createGuest: (body: CreateGuestBodyType) =>
-    http.post<CreateGuestResType>(`${prefix}/guests`, body),
+  createGuest: (data: CreateGuestType) =>
+    http.post<GuestType>(`${userProfix}/create-guest`, data),
+  callStaff: (data: CallStaffType) => http.post(`/guest/call-staff`, data),
 };

@@ -7,6 +7,8 @@ import {
 } from '@/components/ui/card';
 import DishTable from '@/app/manage/products/product-table';
 import { Suspense } from 'react';
+import LowStockWarningDialog from '@/components/lowStockWarningDialog';
+import CallStaffNotification from '@/components/CallStaffNotification';
 
 export default function DishesPage() {
   return (
@@ -23,6 +25,8 @@ export default function DishesPage() {
             </Suspense>
           </CardContent>
         </Card>
+        <LowStockWarningDialog />
+        <CallStaffNotification />
       </div>
     </main>
   );

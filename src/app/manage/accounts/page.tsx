@@ -8,6 +8,8 @@ import {
 
 import AccountTable from '@/app/manage/accounts/account-table';
 import { Suspense } from 'react';
+import LowStockWarningDialog from '@/components/lowStockWarningDialog';
+import CallStaffNotification from '@/components/CallStaffNotification';
 
 export default function Dashboard() {
   return (
@@ -24,6 +26,8 @@ export default function Dashboard() {
             </Suspense>
           </CardContent>
         </Card>
+        <LowStockWarningDialog />
+        <CallStaffNotification />
       </div>
     </main>
   );

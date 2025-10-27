@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { LoginResType } from '@/app/SchemaModel/auth.schema';
+import { LoginResType } from '@/app/ValidationSchemas/auth.schema';
 import envConfig from '@/config';
 import {
   getAccessTokenFormLocalStorage,

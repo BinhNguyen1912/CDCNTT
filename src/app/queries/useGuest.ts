@@ -2,6 +2,7 @@
 'use client';
 import { guestApiRequests } from '@/apiRequest/guest';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { GuestOrdersQueryType } from '@/app/ValidationSchemas/guest.schema';
 
 export const useGuestLoginMutation = () => {
   return useMutation({
@@ -21,9 +22,10 @@ export const useGuestOrderMutation = () => {
   });
 };
 
-export const useGetGuestOrderListMutation = () => {
+export const useGetGuestOrderList = (params?: GuestOrdersQueryType) => {
   return useQuery({
-    queryKey: ['guest-orders'],
-    queryFn: guestApiRequests.getGuestOrderList,
+    queryKey: ['guest-orders', params],
+    queryFn: () => guestApiRequests.getGuestOrderList(),
+    enabled: true,
   });
 };

@@ -1,5 +1,5 @@
-import { MediaResType } from '@/app/SchemaModel/media.schema';
-import { UploadImageResType } from '@/app/schemaValidations/media.schema';
+import { MediaResType } from '@/app/ValidationSchemas/media.schema';
+import { UploadImageResType } from '@/app/ValidationSchemas/media.schema';
 import http from '@/lib/http';
 
 export const mediaApiRequest = {

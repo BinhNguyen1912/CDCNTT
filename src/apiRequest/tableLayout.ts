@@ -3,7 +3,7 @@ import {
   TableDetailResType,
   TableListResType,
   UpdateTableBodyType,
-} from '@/app/SchemaModel/table.schema';
+} from '@/app/ValidationSchemas/table.schema';
 
 import http from '@/lib/http';
 

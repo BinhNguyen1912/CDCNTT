@@ -3,8 +3,8 @@ import {
   AreaBodyType,
   AreaQueryType,
   UpdateAreaBodyType,
-} from '@/app/SchemaModel/area.schema';
-import { UpdateTableBodyType } from '@/app/SchemaModel/table.schema';
+} from '@/app/ValidationSchemas/area.schema';
+import { UpdateTableBodyType } from '@/app/ValidationSchemas/table.schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const useListArea = (query?: Partial<AreaQueryType>) => {

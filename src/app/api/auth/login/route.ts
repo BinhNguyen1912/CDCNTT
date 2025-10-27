@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { authApiRequests } from '@/apiRequest/auth';
-import { LoginBodyType } from '@/app/schemaValidations/auth.schema';
+import { LoginBodyType } from '@/app/ValidationSchemas/auth.schema';
 import { cookies } from 'next/headers';
 import { HttpError } from '@/lib/http';
 import { decode } from '@/lib/jwt';
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const cookieStores = cookies();
   try {
     const { payload } = await authApiRequests.sLogin(body);
-
+    if (!payload) return Response.json('Lỗi khi gọi api', { status: 401 });
     const { accessToken, refreshToken } = payload;
 
     const decodeAccessToken = decode(accessToken);

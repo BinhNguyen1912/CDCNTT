@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch'; // Import Switch component
 import { useUpdateAreaMutation } from '@/app/queries/useArea';
 import { toast } from 'react-toastify';
-import { AreaType } from '@/app/SchemaModel/area.schema';
+import { AreaType } from '@/app/ValidationSchemas/area.schema';
 
 interface EditAreaDialogProps {
   open: boolean;

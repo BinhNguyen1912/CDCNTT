@@ -6,6 +6,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import LowStockWarningDialog from '@/components/lowStockWarningDialog';
+import CallStaffNotification from '@/components/CallStaffNotification';
 
 import { Suspense } from 'react';
 
@@ -24,6 +26,8 @@ export default function AccountsPage() {
             </Suspense>
           </CardContent>
         </Card>
+        <LowStockWarningDialog />
+        <CallStaffNotification />
       </div>
     </main>
   );

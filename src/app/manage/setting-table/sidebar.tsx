@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Eye, X } from 'lucide-react';
 import { Area, FurnitureType, TableData } from './types/table';
-import { AreaType } from '@/app/SchemaModel/area.schema';
+import { AreaType } from '@/app/ValidationSchemas/area.schema';
 import AreaTags from '@/app/manage/setting-table/areaTags';
 import { furnitureCategories } from '@/app/manage/setting-table/data/tables';
 

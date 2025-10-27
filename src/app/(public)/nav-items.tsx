@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/components/app-provider';
 import Link from 'next/link';
 import { toast } from 'react-toastify';
+import { useEffect, useState } from 'react';
 
 const menuItems: {
   title: string;
@@ -72,9 +73,15 @@ const menuItems: {
 export default function NavItems({ className }: { className?: string }) {
   const setRole = useAppStore((state) => state.setRole);
   const role = useAppStore((state) => state.role);
+  const [isMounted, setIsMounted] = useState(false);
   // const disconnectSocket = useAppStore((state) => state.disconnectSocket);
   const logoutMutation = useLogoutMutation();
   const router = useRouter();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const logout = async () => {
     if (logoutMutation.isPending) return;
     try {
@@ -89,6 +96,27 @@ export default function NavItems({ className }: { className?: string }) {
       });
     }
   };
+
+  // Prevent hydration mismatch by not rendering role-dependent content until mounted
+  if (!isMounted) {
+    return (
+      <>
+        {menuItems.map((item) => {
+          // Only show items that don't depend on role during SSR
+          const canShowSSR = item.role === undefined && !item.hideWhenLogin;
+          if (canShowSSR) {
+            return (
+              <Link href={item.href} key={item.href} className={className}>
+                {item.title}
+              </Link>
+            );
+          }
+          return null;
+        })}
+      </>
+    );
+  }
+
   return (
     <>
       {menuItems.map((item) => {

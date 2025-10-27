@@ -8,7 +8,7 @@ import {
   RefreshTokenBodyType,
   RegisterBodyType,
   RegisterResType,
-} from '@/app/SchemaModel/auth.schema';
+} from '@/app/ValidationSchemas/auth.schema';
 import http from '@/lib/http';
 
 export const authApiRequests = {

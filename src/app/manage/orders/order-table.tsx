@@ -1,6 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
+import { createContext, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { endOfDay, format, startOfDay } from 'date-fns';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { toast } from 'react-toastify';
 import {
   ColumnFiltersState,
   SortingState,
@@ -21,28 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import AddOrder from '@/app/manage/orders/add-order';
-import EditOrder from '@/app/manage/orders/edit-order';
-import { createContext, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import AutoPagination from '@/components/auto-pagination';
-import { getVietnameseOrderStatus, handleErrorApi } from '@/lib/utils';
-import OrderStatics from '@/app/manage/orders/order-statics';
-import orderTableColumns from '@/app/manage/orders/order-table-columns';
-import { useOrderService } from '@/app/manage/orders/order.service';
-import { Check, ChevronsUpDown } from 'lucide-react';
-
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { endOfDay, format, startOfDay } from 'date-fns';
-import { OrderStatusValues } from '@/app/constants/type';
-import {
-  GetOrdersResType,
-  PayGuestOrdersResType,
-  UpdateOrderResType,
-} from '@/app/schemaValidations/order.schema';
-import { Popover } from '@radix-ui/react-popover';
-import { PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
   CommandGroup,
@@ -50,32 +32,32 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import {
-  useGetOrderListQuery,
-  useUpdateOrderMutation,
-} from '@/app/queries/useOrder';
-import { useListTable } from '@/app/useTable';
-import { toast } from 'react-toastify';
-import {
-  GuestCreateOrdersBodyType,
-  GuestCreateOrdersResType,
-} from '@/app/schemaValidations/guest.schema';
-import TableSkeleton from '@/app/manage/orders/table-skeleton';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn, getVietnameseOrderStatus, handleErrorApi } from '@/lib/utils';
 import { useAppStore } from '@/components/app-provider';
+import { getAccessTokenFormLocalStorage, generateSocketIo } from '@/lib/utils';
+import { OrderStatusValues } from '@/app/constants/type';
+import {
+  OrderResType,
+  OrdersListResType,
+} from '@/app/ValidationSchemas/order.schema';
+import orderApiRequest from '@/apiRequest/order';
+import { useUpdateOrderMutation } from '@/app/queries/useOrder';
+import { useListTableNode } from '@/app/queries/useTableNode';
+import { useOrderService } from './order.service';
+import AutoPagination from '@/components/auto-pagination';
+import orderTableColumns from './order-table-columns';
+import TableSkeleton from './table-skeleton';
+import OrderStatics from './order-statics';
 import NewOrderSound from '@/components/newOrderSound';
+import AddOrder from './add-order';
 
-export const OrderTableContext = createContext({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  setOrderIdEdit: (value: number | undefined) => {},
-  orderIdEdit: undefined as number | undefined,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  changeStatus: (payload: {
-    orderId: number;
-    dishId: number;
-    status: (typeof OrderStatusValues)[number];
-    quantity: number;
-  }) => {},
-  orderObjectByGuestId: {} as OrderObjectByGuestID,
-});
+const PAGE_SIZE = 10;
+const initFromDate = startOfDay(new Date());
+const initToDate = endOfDay(new Date());
 
 export type StatusCountObject = Record<
   (typeof OrderStatusValues)[number],
@@ -85,49 +67,255 @@ export type Statics = {
   status: StatusCountObject;
   table: Record<number, Record<number, StatusCountObject>>;
 };
-export type OrderObjectByGuestID = Record<number, GetOrdersResType['data']>;
+export type OrderObjectByGuestID = Record<number, OrdersListResType['data']>;
 export type ServingGuestByTableNumber = Record<number, OrderObjectByGuestID>;
 
-//Hàm khởi tạo
-const PAGE_SIZE = 10;
-const initFromDate = startOfDay(new Date());
-const initToDate = endOfDay(new Date());
+export const OrderTableContext = createContext({
+  setOrderIdEdit: (value: number | undefined) => {},
+  orderIdEdit: undefined as number | undefined,
+  changeStatus: (payload: {
+    orderId: number;
+    dishId: number;
+    status: (typeof OrderStatusValues)[number];
+    quantity: number;
+  }) => {},
+  orderObjectByGuestId: {} as OrderObjectByGuestID,
+  refetchOrderList: () => {},
+});
+
 export default function OrderTable() {
   const searchParam = useSearchParams();
+  const page = searchParam.get('page') ? Number(searchParam.get('page')) : 1;
+  const pageIndex = page - 1;
+
+  const socket = useAppStore((state) => state.socket);
+  const setSocket = useAppStore((state) => state.setSocket);
+  const isAuth = useAppStore((state) => state.isAuth);
+  const role = useAppStore((state) => state.role);
   const [openStatusFilter, setOpenStatusFilter] = useState(false);
   const [fromDate, setFromDate] = useState(initFromDate);
   const [toDate, setToDate] = useState(initToDate);
-  const page = searchParam.get('page') ? Number(searchParam.get('page')) : 1;
-  const pageIndex = page - 1;
   const [orderIdEdit, setOrderIdEdit] = useState<number | undefined>();
-  const orderListData = useGetOrderListQuery({
-    fromDate,
-    toDate,
+  const [orderList, setOrderList] = useState<OrdersListResType['data']>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasNewOrder, setHasNewOrder] = useState(false);
+
+  // API calls
+  const fetchOrderList = async () => {
+    setIsLoading(true);
+    try {
+      const response = await orderApiRequest.getOrdersList({
+        page: page,
+        limit: PAGE_SIZE,
+        fromDate: fromDate || initFromDate,
+        toDate: toDate || initToDate,
+      });
+      setOrderList(response.payload?.data || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refetchOrderList = async () => {
+    await fetchOrderList();
+  };
+
+  // Table data
+  const tableListQuery = useListTableNode();
+
+  // Effects
+  useEffect(() => {
+    fetchOrderList();
+  }, [fromDate, toDate]);
+
+  // Socket effects for new orders
+  useEffect(() => {
+    if (!socket?.connected) return;
+
+    function onNewOrder(data: any) {
+      // Kiểm tra data có tồn tại không
+      if (!data) {
+        console.error('❌ No data received in new-order event');
+        return;
+      }
+
+      // Xử lý cả trường hợp data là object đơn hoặc mảng
+      let orderData;
+      if (Array.isArray(data)) {
+        if (data.length === 0) {
+          return;
+        }
+        orderData = data[0]; // Lấy đơn hàng đầu tiên
+      } else {
+        orderData = data;
+      }
+
+      // Kiểm tra orderData có tồn tại không
+      if (!orderData) {
+        return;
+      }
+
+      // Kiểm tra orderData có cấu trúc đúng không
+      if (typeof orderData !== 'object') {
+        return;
+      }
+
+      const guest = orderData?.guest;
+      const tableNode = orderData?.tableNode;
+      const items = orderData?.items;
+
+      if (!guest) {
+        console.error('❌ No guest found in order data');
+        return;
+      }
+
+      // Báo âm thanh
+      setHasNewOrder(true);
+      setTimeout(() => setHasNewOrder(false), 1000);
+
+      // Hiển thị toast thông báo
+      toast.warning(
+        `Khách hàng ${guest?.name} vừa đặt ${items?.length || 1} món mới tại bàn ${tableNode?.name || 'không xác định'}`,
+        {
+          hideProgressBar: true,
+          autoClose: 2000,
+          icon: false,
+        },
+      );
+
+      // Refresh order list
+      fetchOrderList();
+
+      // Refetch tableNode để cập nhật số người
+      console.log('🔄 Refetching tableNode...');
+      tableListQuery.refetch();
+    }
+
+    socket.on('new-order', onNewOrder);
+
+    return () => {
+      socket.off('new-order', onNewOrder);
+    };
+  }, [socket, tableListQuery]);
+
+  // Listen for order status updates
+  useEffect(() => {
+    if (!socket?.connected) {
+      console.log(
+        '🔌 Socket not connected, skipping order-status-updated listener',
+      );
+      return;
+    }
+
+    console.log('🎧 Setting up order-status-updated listener...');
+
+    function onOrderStatusUpdated(data: any) {
+      console.log('📢 Order status updated:', data);
+
+      // Hiển thị toast thông báo cho guest
+      toast.success(data.message || 'Trạng thái đơn hàng đã được cập nhật', {
+        hideProgressBar: true,
+        autoClose: 3000,
+      });
+
+      // Cập nhật order trong danh sách nếu có
+      if (data.order) {
+        setOrderList((prevOrders) =>
+          prevOrders.map((order) => {
+            if (order.id === data.order.id) {
+              return {
+                ...order,
+                status: data.order.status,
+                quantity: data.order.quantity,
+              };
+            }
+            return order;
+          }),
+        );
+      }
+
+      // Refetch tableNode để cập nhật số người
+      console.log('🔄 Refetching tableNode...');
+      tableListQuery.refetch();
+    }
+
+    socket.on('order-status-updated', onOrderStatusUpdated);
+    console.log('✅ order-status-updated listener registered');
+
+    return () => {
+      socket.off('order-status-updated', onOrderStatusUpdated);
+      console.log('🗑️ order-status-updated listener removed');
+    };
+  }, [socket, tableListQuery]);
+
+  // Listen for payment success
+  useEffect(() => {
+    if (!socket?.connected) {
+      console.log('🔌 Socket not connected, skipping payment-success listener');
+      return;
+    }
+
+    console.log('🎧 Setting up payment-success listener...');
+
+    function onPaymentSuccess(data: any) {
+      console.log('💳 Payment success event received:', data);
+
+      // Show toast notification
+      const orderCount = Array.isArray(data)
+        ? data.length
+        : data?.orders?.length || 1;
+      toast.success(`Đã thanh toán thành công ${orderCount} đơn hàng!`, {
+        hideProgressBar: true,
+        autoClose: 3000,
+      });
+
+      // Refetch order list to get updated data
+      console.log('🔄 Refetching orders after payment...');
+      refetchOrderList();
+
+      // Refetch tableNode to update guest count
+      tableListQuery.refetch();
+    }
+
+    socket.on('payment-success', onPaymentSuccess);
+    console.log('✅ payment-success listener registered');
+
+    return () => {
+      socket.off('payment-success', onPaymentSuccess);
+      console.log('🗑️ payment-success listener removed');
+    };
+  }, [socket, refetchOrderList, tableListQuery]);
+
+  const tableList = tableListQuery.data?.payload?.data ?? [];
+  const tableListSortedByNumber = tableList.sort((a: any, b: any) => {
+    // Extract number from name like "Lầu 1 - Bàn 13" -> 13
+    const getNumber = (name: string) => {
+      const match = name.match(/\d+/);
+      return match ? parseInt(match[0]) : 0;
+    };
+    return getNumber(a.name) - getNumber(b.name);
   });
-  const refetchOrderList = orderListData.refetch;
-  const orderList = orderListData.data?.payload.data || [];
-  const tableListData = useListTable();
-  const tableList = tableListData.data?.payload.data || [];
-  const tableListSortedByNumber = tableList.sort(
-    (a: any, b: any) => a.number - b.number,
-  );
+
+  // Table state
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [pagination, setPagination] = useState({
-    pageIndex, // Gía trị mặc định ban đầu, không có ý nghĩa khi data được fetch bất đồng bộ
-    pageSize: PAGE_SIZE, //default page size
+    pageIndex,
+    pageSize: PAGE_SIZE,
   });
 
-  const [hasNewOrder, setHasNewOrder] = useState(false);
+  // Mutations
+  const updateOrderMutation = useUpdateOrderMutation();
 
-  //SOCKET
-  const socket = useAppStore((state) => state.socket);
-
+  // Order service
   const { statics, orderObjectByGuestId, servingGuestByTableNumber } =
     useOrderService(orderList);
-  const updateOrderMutation = useUpdateOrderMutation();
+
+  // Actions
   const changeStatus = async (body: {
     orderId: number;
     dishId: number;
@@ -135,15 +323,34 @@ export default function OrderTable() {
     quantity: number;
   }) => {
     try {
-      await updateOrderMutation.mutateAsync(body);
-      refetchOrderList();
-    } catch (error) {
-      handleErrorApi({
-        error,
+      // Chuyển đổi sang format mới cho API
+      await updateOrderMutation.mutateAsync({
+        id: body.orderId,
+        data: {
+          status: body.status,
+          quantity: body.quantity,
+          skuId: body.dishId, // dishId được map thành skuId
+        },
       });
+
+      // Cập nhật trực tiếp state local thay vì reload toàn bộ
+      setOrderList((prevOrders) =>
+        prevOrders.map((order) => {
+          if (order.id === body.orderId) {
+            return {
+              ...order,
+              status: body.status,
+              quantity: body.quantity,
+            };
+          }
+          return order;
+        }),
+      );
+    } catch (error) {
+      handleErrorApi({ error });
     }
   };
-
+  // Table setup
   const table = useReactTable({
     data: orderList,
     columns: orderTableColumns,
@@ -177,78 +384,78 @@ export default function OrderTable() {
     setFromDate(initFromDate);
     setToDate(initToDate);
   };
+
   useEffect(() => {
     if (socket?.connected) {
       onConnect();
     }
+
+    function onConnect() {
+      console.log('Socket connected:', socket?.id);
+    }
+
+    function onDisconnect() {
+      console.log('Socket disconnected');
+    }
+
     function refetch() {
       const now = new Date();
       if (now >= fromDate && now <= toDate) {
         refetchOrderList();
       }
     }
-    function onConnect() {
-      console.log('connected', socket?.id);
-    }
-    function onDisconnect() {}
-    function onUpdateOrder(data: UpdateOrderResType['data']) {
+
+    function onNewOrder(data: OrderResType) {
       console.log('data', data);
-      toast.success(
-        `Món ăn ${data.dishSnapshot.name} - SL: ${
-          data.quantity
-        } đã được chuyển sang trạng thái ${getVietnameseOrderStatus(
-          data.status,
-        )}`,
-        {
-          hideProgressBar: true,
-          autoClose: 2000,
-          icon: false,
-        },
-      );
-      refetch();
-    }
-    function onNewOrder(data: GuestCreateOrdersResType['data']) {
-      const guest = data[0].guest;
-      // báo âm thanh
+      const { guest, tableNode, items } = data;
+      // toast(
+      //   `${guest?.name} tại bàn ${tableNode?.name} vừa đặt ${items?.length} đơn`,
+      // );
+
       setHasNewOrder(true);
 
-      setTimeout(() => setHasNewOrder(false), 1000); // reset để lần sau phát lại
+      refetch();
 
-      toast.success(
-        `Khách hàng ${guest?.name} vừa đặt ${data.length} món mới tại bàn ${guest?.tableNumber} `,
-        {
-          hideProgressBar: true,
-          autoClose: 2000,
-          icon: false,
-        },
-      );
-      refetch();
-    }
-    function onPayment(data: PayGuestOrdersResType['data']) {
-      const guest = data[0].guest;
-      toast.success(
-        `Khách hàng ${guest?.name} vừa thanh toán ${data.length} món tại bàn ${guest?.tableNumber} `,
-      );
-      refetch();
+      // Refetch tableNode để cập nhật số người
+      console.log('🔄 Refetching tableNode...');
+      tableListQuery.refetch();
     }
 
+    function onPayment(data: any) {
+      const { guest } = data[0];
+      toast(
+        `${guest?.name} tại bàn ${guest?.tableNode.name} thanh toán thành công ${data.length} đơn`,
+      );
+      refetch();
+
+      // Refetch tableNode để cập nhật số người
+      console.log('🔄 Refetching tableNode...');
+      tableListQuery.refetch();
+    }
+
+    socket?.on('connect', onConnect);
+    socket?.on('disconnect', onDisconnect);
     socket?.on('new-order', onNewOrder);
     socket?.on('payment', onPayment);
-    //lang nghe
-    socket?.on('connect', onConnect);
-    //huy lang nghe
-    socket?.on('disconnect', onDisconnect);
 
-    // socket?.on('update-order', onUpdateOrder);
     return () => {
       socket?.off('connect', onConnect);
       socket?.off('disconnect', onDisconnect);
-      socket?.off('payment', onPayment);
-
-      // socket?.off('update-order', onUpdateOrder);
       socket?.off('new-order', onNewOrder);
+      socket?.off('payment', onPayment);
     };
-  }, [fromDate, toDate, refetchOrderList, socket]);
+  }, [refetchOrderList, fromDate, toDate, socket, tableListQuery]);
+
+  useEffect(() => {
+    if (hasNewOrder) {
+      const timer = setTimeout(() => {
+        setHasNewOrder(false);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [hasNewOrder]);
+
   return (
     <OrderTableContext.Provider
       value={{
@@ -256,18 +463,20 @@ export default function OrderTable() {
         setOrderIdEdit,
         changeStatus,
         orderObjectByGuestId,
+        refetchOrderList: refetchOrderList,
       }}
     >
       <div className="w-full">
-        <NewOrderSound hasNewOrder={hasNewOrder} />
-        <EditOrder
+        {/* Edit Order Modal */}
+        {/* <EditOrder
           id={orderIdEdit}
           setId={setOrderIdEdit}
-          onSubmitSuccess={() => {
-            refetchOrderList();
-          }}
-        />
-        <div className=" flex items-center">
+          onSubmitSuccess={() => {}}
+        /> */}
+
+        {/* Order Statistics */}
+
+        <div className="flex items-center">
           <div className="flex flex-wrap gap-2">
             <div className="flex items-center">
               <span className="mr-2">Từ</span>
@@ -288,7 +497,7 @@ export default function OrderTable() {
                 onChange={(event) => setToDate(new Date(event.target.value))}
               />
             </div>
-            <Button className="" variant={'outline'} onClick={resetDateFilter}>
+            <Button variant="outline" onClick={resetDateFilter}>
               Reset
             </Button>
           </div>
@@ -296,6 +505,7 @@ export default function OrderTable() {
             <AddOrder />
           </div>
         </div>
+        {/* Table Filters */}
         <div className="flex flex-wrap items-center gap-4 py-4">
           <Input
             placeholder="Tên khách"
@@ -310,10 +520,10 @@ export default function OrderTable() {
           <Input
             placeholder="Số bàn"
             value={
-              (table.getColumn('tableNumber')?.getFilterValue() as string) ?? ''
+              (table.getColumn('tableNodeId')?.getFilterValue() as string) ?? ''
             }
             onChange={(event) =>
-              table.getColumn('tableNumber')?.setFilterValue(event.target.value)
+              table.getColumn('tableNodeId')?.setFilterValue(event.target.value)
             }
             className="max-w-[80px]"
           />
@@ -375,12 +585,14 @@ export default function OrderTable() {
         </div>
         <OrderStatics
           statics={statics}
-          tableList={tableListSortedByNumber}
+          tableNodeList={tableListSortedByNumber}
           servingGuestByTableNumber={servingGuestByTableNumber}
           dataOrder={orderList}
         />
-        {!table && <TableSkeleton />}
-        {table && (
+
+        {/* Orders Table */}
+        {isLoading && <TableSkeleton />}
+        {!isLoading && (
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -388,7 +600,7 @@ export default function OrderTable() {
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
                       return (
-                        <TableHead key={header.id} className="">
+                        <TableHead key={header.id}>
                           {header.isPlaceholder
                             ? null
                             : flexRender(
@@ -432,8 +644,9 @@ export default function OrderTable() {
             </Table>
           </div>
         )}
+        {/* Pagination */}
         <div className="flex items-center justify-end space-x-2 py-4">
-          <div className="text-xs text-muted-foreground py-4 flex-1 ">
+          <div className="text-xs text-muted-foreground py-4 flex-1">
             Hiển thị{' '}
             <strong>{table.getPaginationRowModel().rows.length}</strong> trong{' '}
             <strong>{orderList.length}</strong> kết quả
@@ -447,6 +660,7 @@ export default function OrderTable() {
           </div>
         </div>
       </div>
+      <NewOrderSound hasNewOrder={hasNewOrder} />
     </OrderTableContext.Provider>
   );
 }

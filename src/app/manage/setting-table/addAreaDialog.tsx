@@ -22,7 +22,10 @@ import {
   FormLabel,
 } from '@/components/ui/form';
 import { useCreateAreaMutation } from '@/app/queries/useArea';
-import { areaBodySchema, AreaBodyType } from '@/app/SchemaModel/area.schema';
+import {
+  areaBodySchema,
+  AreaBodyType,
+} from '@/app/ValidationSchemas/area.schema';
 import { toast } from 'react-toastify';
 
 interface AddAreaDialogProps {

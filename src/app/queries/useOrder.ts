@@ -1,50 +1,56 @@
+import { useMutation, useQuery } from '@tanstack/react-query';
 import orderApiRequest from '@/apiRequest/order';
 import {
-  GetOrdersQueryParamsType,
-  PayGuestOrdersBodyType,
-  UpdateOrderBodyType,
-} from '@/app/schemaValidations/order.schema';
-import { useMutation, useQuery } from '@tanstack/react-query';
+  OrderQueryType,
+  GuestCreateNewOrderType,
+  OrdersListResType,
+  UpdateOrderType,
+} from '@/app/ValidationSchemas/order.schema';
+
+export const useGetOrderListQuery = (params?: OrderQueryType) => {
+  return useQuery({
+    queryKey: ['orders', params],
+    queryFn: () => orderApiRequest.getOrdersList(params),
+    enabled: true,
+  });
+};
+
+export const useGetOrderDetailQuery = (id: number, enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ['order-detail', id],
+    queryFn: () => orderApiRequest.getOrderDetail(id),
+    enabled: enabled && !!id,
+  });
+};
 
 export const useUpdateOrderMutation = () => {
   return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateOrderType }) =>
+      orderApiRequest.updateOrder(id, data),
+  });
+};
+
+export const useCreateGuestOrderMutation = () => {
+  return useMutation({
+    mutationFn: (data: GuestCreateNewOrderType) =>
+      orderApiRequest.createGuestOrder(data),
+  });
+};
+
+export const useCreateOrderForGuestMutation = () => {
+  return useMutation({
     mutationFn: ({
-      orderId,
-      ...body
-    }: UpdateOrderBodyType & { orderId: number }) =>
-      orderApiRequest.updateOrder(orderId, body),
+      guestId,
+      orders,
+    }: {
+      guestId: number;
+      orders: GuestCreateNewOrderType;
+    }) => orderApiRequest.createOrderForGuest(guestId, orders),
   });
 };
 
-export const useGetOrderDetail = ({
-  enabled,
-  orderId,
-}: {
-  orderId: number;
-  enabled: boolean;
-}) => {
-  return useQuery({
-    queryKey: ['order', orderId],
-    queryFn: () => orderApiRequest.getOrderDetail(orderId),
-    enabled,
-  });
-};
-
-export const useGetOrderListQuery = (params: GetOrdersQueryParamsType) => {
-  return useQuery({
-    queryKey: ['orders', params],
-    queryFn: () => orderApiRequest.getOrderList(params),
-  });
-};
-
-export const usePayGuestOrders = () => {
+export const usePayOrdersByGuestMutation = () => {
   return useMutation({
-    mutationFn: (body: PayGuestOrdersBodyType) => orderApiRequest.pay(body),
-  });
-};
-
-export const useCreateOrder = () => {
-  return useMutation({
-    mutationFn: orderApiRequest.createOrders,
+    mutationFn: (guestId: number) => orderApiRequest.payOrdersByGuest(guestId),
   });
 };

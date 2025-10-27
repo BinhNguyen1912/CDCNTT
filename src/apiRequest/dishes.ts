@@ -3,7 +3,7 @@ import {
   DishListResType,
   DishResType,
   UpdateDishBodyType,
-} from '@/app/schemaValidations/dish.schema';
+} from '@/app/SchemaModel/dish.schema';
 import http from '@/lib/http';
 
 const prefix = '/dishes';

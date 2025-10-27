@@ -21,9 +21,9 @@ import {
 import type { Socket } from 'socket.io-client';
 import { RoleType } from '@/types/jwt.types';
 import { set } from 'zod';
-import socket from '@/lib/socketIo';
 import { decode } from '@/lib/jwt';
 import ListenLogoutSocket from '@/components/listen-logout-socket';
+import NewOrderSound from '@/components/newOrderSound';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -46,9 +46,9 @@ type AppStoreType = {
   isAuth: boolean;
   role: RoleType | undefined;
   setRole: (role?: RoleType | undefined) => void;
-  // socket: Socket | undefined;
-  // setSocket: (socket?: Socket | undefined) => void;
-  // disconnectSocket: () => void;
+  socket: Socket | undefined;
+  setSocket: (socket?: Socket | undefined) => void;
+  disconnectSocket: () => void;
 };
 export const useAppStore = create<AppStoreType>((set) => ({
   isAuth: false,
@@ -59,13 +59,13 @@ export const useAppStore = create<AppStoreType>((set) => ({
       removeTokensFormLocalStorage();
     }
   },
-  // socket: undefined as Socket | undefined,
-  // setSocket: (socket?: Socket | undefined) => set({ socket }),
-  // disconnectSocket: () =>
-  //   set((state) => {
-  //     state.socket?.disconnect();
-  //     return { socket: undefined };
-  //   }),
+  socket: undefined as Socket | undefined,
+  setSocket: (socket?: Socket | undefined) => set({ socket }),
+  disconnectSocket: () =>
+    set((state) => {
+      state.socket?.disconnect();
+      return { socket: undefined };
+    }),
 }));
 
 // export const useAppContext = () => {
@@ -77,11 +77,8 @@ export default function AppProvider({
 }: {
   children: React.ReactNode;
 }) {
-  // const [role, setRoleState] = useState<RoleType | undefined>();
-  // const [socket, setSocket] = useState<Socket>();
-
   const setRole = useAppStore((state) => state.setRole);
-  // const setSocket = useAppStore((state) => state.setSocket);
+  const setSocket = useAppStore((state) => state.setSocket);
   //gọi sau khi component render lần đầu tiên. Mảng rỗng [] nghĩa là chỉ chạy một lần duy nhất khi component mount.
   //Nếu accessToken tồn tại (nghĩa là người dùng đã đăng nhập trước đó), thì gọi setIsAuthState(true) để cập nhật trạng thái đăng nhập của người dùng là true (đã xác thực).
 
@@ -90,23 +87,43 @@ export default function AppProvider({
     //Neu ma co access token thi sao ?
     if (count.current === 0) {
       const accessToken = getAccessTokenFormLocalStorage();
+      console.log(
+        '🔐 Access token from localStorage:',
+        accessToken ? 'Present' : 'Missing',
+      );
+      console.log('🔐 Access token value:', accessToken);
 
       if (accessToken && accessToken !== undefined && accessToken !== '') {
         const payload = decode(accessToken);
+        console.log('🔐 Decoded payload:', payload);
 
         if (payload && payload.roleName) {
+          console.log(
+            '🔐 Setting role and initializing socket...',
+            payload.roleName,
+          );
           setRole(payload.roleName);
-          // setSocket(generateSocketIo(accessToken));
+          const newSocket = generateSocketIo(accessToken);
+          console.log('🔌 Generated socket:', newSocket);
+          setSocket(newSocket);
+
+          // Connect socket một lần duy nhất
+          if (!newSocket.connected) {
+            console.log('🔌 Connecting socket...');
+            newSocket.connect();
+          }
         } else {
           console.warn('AccessToken không hợp lệ hoặc thiếu roleName', payload);
           //(X)
           removeTokensFormLocalStorage();
         }
+      } else {
+        console.log('🔐 No access token found');
       }
 
       count.current++;
     }
-  }, [setRole]);
+  }, [setRole, setSocket]);
 
   // const disconnectSocket = useCallback(() => {
   //   socket?.disconnect();
@@ -135,6 +152,7 @@ export default function AppProvider({
       {children}
       <RefreshToken />
       <ListenLogoutSocket />
+      <NewOrderSound />
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
     // </AppContext.Provider>

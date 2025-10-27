@@ -35,20 +35,65 @@ import {
 } from '@/components/ui/popover';
 import { OrderTableContext } from '@/app/manage/orders/order-table';
 import OrderGuestDetail from '@/app/manage/orders/order-guest-detail';
-import { GetOrdersResType } from '@/app/schemaValidations/order.schema';
-import { OrderStatus, OrderStatusValues } from '@/app/constants/type';
+import {
+  OrderStatus,
+  OrderStatusValues,
+  OrderType,
+} from '@/app/constants/type';
+import { OrdersListResType } from '@/app/ValidationSchemas/order.schema';
 
-type OrderItem = GetOrdersResType['data'][0];
+type OrderItem = OrdersListResType['data'][0];
 const orderTableColumns: ColumnDef<OrderItem>[] = [
   {
-    accessorKey: 'tableNumber',
+    accessorKey: 'tableNodeId',
     header: 'Bàn',
-    cell: ({ row }) => <div>{row.getValue('tableNumber')}</div>,
+    cell: ({ row }) => <div>{row.getValue('tableNodeId')}</div>,
     filterFn: (row, columnId, filterValue: string) => {
       if (filterValue === undefined) return true;
       return simpleMatchText(
         String(row.getValue(columnId)),
-        String(filterValue)
+        String(filterValue),
+      );
+    },
+  },
+  {
+    accessorKey: 'type',
+    header: 'Loại',
+    cell: ({ row }) => {
+      const type = row.getValue('type') as string;
+      const getTypeLabel = (type: string) => {
+        switch (type) {
+          case OrderType.AT_TABLE:
+            return 'Tại bàn';
+          case OrderType.ONLINE:
+            return 'Online';
+          case OrderType.RESERVATION:
+            return 'Đặt trước';
+          default:
+            return type;
+        }
+      };
+
+      const getTypeVariant = (type: string) => {
+        switch (type) {
+          case OrderType.AT_TABLE:
+            return 'default';
+          case OrderType.ONLINE:
+            return 'secondary';
+          case OrderType.RESERVATION:
+            return 'outline';
+          default:
+            return 'default';
+        }
+      };
+
+      return <Badge variant={getTypeVariant(type)}>{getTypeLabel(type)}</Badge>;
+    },
+    filterFn: (row, columnId, filterValue: string) => {
+      if (filterValue === undefined) return true;
+      return simpleMatchText(
+        String(row.getValue(columnId)),
+        String(filterValue),
       );
     },
   },
@@ -56,7 +101,8 @@ const orderTableColumns: ColumnDef<OrderItem>[] = [
     id: 'guestName',
     header: 'Khách hàng',
     cell: function Cell({ row }) {
-      const { orderObjectByGuestId } = useContext(OrderTableContext);
+      const { orderObjectByGuestId, refetchOrderList } =
+        useContext(OrderTableContext);
       const guest = row.original.guest;
       return (
         <div>
@@ -77,6 +123,7 @@ const orderTableColumns: ColumnDef<OrderItem>[] = [
                 <OrderGuestDetail
                   guest={guest}
                   orders={orderObjectByGuestId[guest.id]}
+                  refetch={refetchOrderList}
                 />
               </PopoverContent>
             </Popover>
@@ -88,7 +135,7 @@ const orderTableColumns: ColumnDef<OrderItem>[] = [
       if (filterValue === undefined) return true;
       return simpleMatchText(
         row.original.guest?.name ?? 'Đã bị xóa',
-        String(filterValue)
+        String(filterValue),
       );
     },
   },
@@ -100,8 +147,8 @@ const orderTableColumns: ColumnDef<OrderItem>[] = [
         <Popover>
           <PopoverTrigger asChild>
             <Image
-              src={row.original.dishSnapshot.image}
-              alt={row.original.dishSnapshot.name}
+              src={row.original.items[0].product.images[0]}
+              alt={row.original.items[0].productName}
               width={50}
               height={50}
               className="rounded-md object-cover w-[50px] h-[50px] cursor-pointer"
@@ -110,20 +157,20 @@ const orderTableColumns: ColumnDef<OrderItem>[] = [
           <PopoverContent>
             <div className="flex flex-wrap gap-2">
               <Image
-                src={row.original.dishSnapshot.image}
-                alt={row.original.dishSnapshot.name}
+                src={row.original.items[0].product.images[0]}
+                alt={row.original.items[0].productName}
                 width={100}
                 height={100}
                 className="rounded-md object-cover w-[100px] h-[100px]"
               />
               <div className="space-y-1 text-sm">
                 <h3 className="font-semibold">
-                  {row.original.dishSnapshot.name}
+                  {row.original.items[0].productName}-
+                  {row.original.items[0].skuValue}
                 </h3>
                 <div className="italic">
-                  {formatCurrency(row.original.dishSnapshot.price)}
+                  {formatCurrency(row.original.items[0].skuPrice)}
                 </div>
-                <div>{row.original.dishSnapshot.description}</div>
               </div>
             </div>
           </PopoverContent>
@@ -131,14 +178,18 @@ const orderTableColumns: ColumnDef<OrderItem>[] = [
 
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span>{row.original.dishSnapshot.name}</span>
+            <span>
+              {' '}
+              {row.original.items[0].productName}-
+              {row.original.items[0].skuValue}
+            </span>
             <Badge className="px-1" variant={'secondary'}>
-              x{row.original.quantity}
+              x{row.original.items[0].quantity}
             </Badge>
           </div>
           <span className="italic">
             {formatCurrency(
-              row.original.dishSnapshot.price * row.original.quantity
+              row.original.items[0].skuPrice * row.original.items[0].quantity,
             )}
           </span>
         </div>
@@ -151,13 +202,13 @@ const orderTableColumns: ColumnDef<OrderItem>[] = [
     cell: function Cell({ row }) {
       const { changeStatus } = useContext(OrderTableContext);
       const changeOrderStatus = async (
-        status: (typeof OrderStatusValues)[number]
+        status: (typeof OrderStatusValues)[number],
       ) => {
         changeStatus({
           orderId: row.original.id,
-          dishId: row.original.dishSnapshot.dishId!,
+          dishId: row.original.items[0].skuId,
           status: status,
-          quantity: row.original.quantity,
+          quantity: row.original.items[0].quantity,
         });
       };
       return (
@@ -165,7 +216,7 @@ const orderTableColumns: ColumnDef<OrderItem>[] = [
           onValueChange={(value: (typeof OrderStatusValues)[number]) => {
             changeOrderStatus(value);
           }}
-          defaultValue={OrderStatus.Pending}
+          defaultValue={OrderStatus.PENDING}
           value={row.getValue('status')}
         >
           <SelectTrigger className="w-[140px]">
@@ -185,7 +236,7 @@ const orderTableColumns: ColumnDef<OrderItem>[] = [
   {
     id: 'orderHandlerName',
     header: 'Người xử lý',
-    cell: ({ row }) => <div>{row.original.orderHandler?.name ?? ''}</div>,
+    cell: ({ row }) => <div>{row.original.createdBy?.name}</div>,
   },
   {
     accessorKey: 'createdAt',
@@ -197,7 +248,7 @@ const orderTableColumns: ColumnDef<OrderItem>[] = [
         </div>
         <div className="flex items-center space-x-4">
           {formatDateTimeToLocaleString(
-            row.original.updatedAt as unknown as string
+            row.original.updatedAt as unknown as string,
           )}
         </div>
       </div>

@@ -35,17 +35,17 @@ import {
   GenerateSKU,
   UpdateProductBodySchema,
   UpdateProductBodyType,
-} from '@/app/SchemaModel/product.schema';
+} from '@/app/ValidationSchemas/product.schema';
 import DialogCategory from '@/app/manage/products/dialog-category';
 import { useGetCategories } from '@/app/queries/useCategory';
 import { Switch } from '@/components/ui/switch';
-import { UpsertSKUBody } from '@/app/SchemaModel/sku.schema';
+import { UpsertSKUBody } from '@/app/ValidationSchemas/sku.schema';
 
 // Định nghĩa types cho biến thể
 type VariantOption = {
   value: string;
   price: number;
-  image: string;
+  image?: string;
 };
 
 type VariantType = {
@@ -77,7 +77,7 @@ export default function EditProduct({
     id: id as number,
     enabled: Boolean(id),
   });
-
+  const [originalSkus, setOriginalSkus] = useState<UpsertSKUBody[]>([]);
   const { data: categories } = useGetCategories();
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
 
@@ -102,15 +102,15 @@ export default function EditProduct({
       const categoryIds = data.payload.categories.map((c) => c.id);
       setSelectedCategories(categoryIds);
       setImages(data.payload.images || []);
-      setVariants(data.payload.variants || []);
-
+      setVariants(data?.payload?.variants || []);
+      setOriginalSkus(data.payload.skus || []);
       form.reset({
         name: data.payload.name,
         basePrice: data.payload.basePrice,
         virtualPrice: data.payload.virtualPrice,
         categories: categoryIds,
         variants: data.payload.variants || [],
-        skus: [],
+        skus: data.payload.skus || [],
         images: data.payload.images,
         publishedAt: data.payload.publishedAt,
       });
@@ -201,9 +201,8 @@ export default function EditProduct({
         });
 
         const uploadResult = await mediaApiRequest.upload(formData);
-        const uploadedUrls = uploadResult.payload.data.map(
-          (item: any) => item.url,
-        );
+        const uploadedUrls =
+          uploadResult?.payload?.data.map((item: any) => item.url) || [];
         finalImageUrls = [...finalImageUrls, ...uploadedUrls];
       }
 
@@ -221,7 +220,7 @@ export default function EditProduct({
                 const uploadResult = await mediaApiRequest.upload(formData);
                 return {
                   ...option,
-                  image: uploadResult.payload.data[0].url,
+                  image: uploadResult?.payload?.data[0].url,
                 };
               }
               return option;
@@ -235,30 +234,39 @@ export default function EditProduct({
         }),
       );
 
-      // Chỉ tạo SKUs nếu có variants và variants có dữ liệu
+      // Đảm bảo variants và skus luôn đồng bộ
       let generatedSkus: UpsertSKUBody[] = [];
-      if (
-        updatedVariants.length > 0 &&
-        updatedVariants.some((v) => v.valueOption.length > 0)
-      ) {
-        generatedSkus = GenerateSKU(updatedVariants, {
-          basePrice: values.basePrice,
-          image: finalImageUrls[0],
-        });
-      }
 
+      if (updatedVariants.length > 0) {
+        // ✅ Có variants → tạo SKUs từ variants
+        generatedSkus = updatedVariants.flatMap((variant) =>
+          variant.valueOption.map((option) => ({
+            price: option.price,
+            image: option.image || '',
+            value: option.value,
+          })),
+        );
+      } else {
+        // ✅ Không có variants → tạo 1 SKU mặc định từ basePrice
+        generatedSkus = [
+          {
+            price: values.basePrice,
+            image: finalImageUrls[0] || '',
+            value: values.name,
+          },
+        ];
+      }
       const body = {
-        id: id as number,
         ...values,
         images: finalImageUrls,
         categories: selectedCategories,
-        variants: values.variants,
-        skus: generatedSkus, // Sẽ là mảng rỗng nếu không có variants hoặc variants rỗng
+        variants: updatedVariants,
+        skus: generatedSkus,
       };
 
       console.log('Final body:', body);
 
-      await updateMutation.mutateAsync(body);
+      await updateMutation.mutateAsync({ id: id as number, ...body });
       toast.success('Cập nhật thành công');
       await revalidateApiRequest('products');
 
@@ -533,7 +541,7 @@ export default function EditProduct({
                             {selectedCategories.length > 0 && (
                               <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg">
                                 {selectedCategories.map((id) => {
-                                  const cat = categories?.payload.data.find(
+                                  const cat = categories?.payload?.data.find(
                                     (c) => c.id === id,
                                   );
                                   if (!cat) return null;

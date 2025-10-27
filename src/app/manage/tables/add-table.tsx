@@ -36,7 +36,7 @@ import { TableStatus, TableStatusValues } from '@/app/constants/table.constant';
 import {
   CreateTableBodySchema,
   CreateTableBodyType,
-} from '@/app/SchemaModel/table.schema';
+} from '@/app/ValidationSchemas/table.schema';
 
 export default function AddTable() {
   const [open, setOpen] = useState(false);
@@ -56,7 +56,7 @@ export default function AddTable() {
     if (createTableMutaion.isPending) return;
     try {
       const resuft = await createTableMutaion.mutateAsync(data);
-      toast.success(resuft.payload.message);
+      toast.success(resuft.payload?.message ?? 'Thêm bàn thành công');
       reset();
     } catch (error) {
       handleErrorApi({

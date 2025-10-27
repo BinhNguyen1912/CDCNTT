@@ -64,10 +64,13 @@ export function middleware(request: NextRequest) {
       role !== Role.ADMIN &&
       onlyOwnerPaths.some((path) => pathname.startsWith(path));
 
+    const isNotAdminGoToSettingTable =
+      role !== Role.ADMIN && '/manage/setting-table' == pathname;
     if (
       isGuestToManagePath ||
       isNotGuestToGuestPath ||
-      iNotOwnerGotoOwnerPath
+      iNotOwnerGotoOwnerPath ||
+      isNotAdminGoToSettingTable
     ) {
       return NextResponse.redirect(new URL('/', request.url));
     }

@@ -8,7 +8,13 @@ import { toast } from 'react-toastify';
 import { twMerge } from 'tailwind-merge';
 import { format } from 'date-fns';
 import { authApiRequests } from '@/apiRequest/auth';
-import { DishStatus, OrderStatus, Role } from '@/app/constants/type';
+import {
+  DishStatus,
+  OrderStatus,
+  OrderStatusValues,
+  Role,
+  TypeToOrderStatus,
+} from '@/app/constants/type';
 import envConfig from '@/config';
 import { TokenPayload } from '@/types/jwt.types';
 import { guestApiRequests } from '@/apiRequest/guest';
@@ -16,6 +22,7 @@ import { BookX, CookingPot, HandCoins, Loader, Truck } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { decode } from '@/lib/jwt';
 import { TableStatus } from '@/app/constants/table.constant';
+import { ProductStatus } from '@/app/constants/product.constant';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -138,8 +145,11 @@ export const checkAndRefreshToken = async (param?: {
         role == Role.GUEST
           ? await guestApiRequests.refreshToken()
           : await authApiRequests.refreshToken();
-      setAccessTokenFormLocalStorage(res!.payload.accessToken);
-      setRefreshTokenFormLocalStorage(res!.payload.refreshToken);
+      if (res && res.payload) {
+        setAccessTokenFormLocalStorage(res.payload.accessToken);
+        setRefreshTokenFormLocalStorage(res.payload.refreshToken);
+      }
+      console.log('res', res);
 
       param?.onSuccess && param.onSuccess();
     } catch (error: any) {
@@ -150,11 +160,41 @@ export const checkAndRefreshToken = async (param?: {
 };
 
 export const generateSocketIo = (accessToken: string) => {
-  return io(`${envConfig.NEXT_PUBLIC_API_ENDPOINT}`, {
+  console.log(
+    '🔌 Creating socket with endpoint:',
+    envConfig.NEXT_PUBLIC_API_ENDPOINT,
+  );
+  console.log(' Using access token:', accessToken ? 'Present' : 'Missing');
+
+  const socket = io(`${envConfig.NEXT_PUBLIC_API_ENDPOINT}`, {
     auth: {
-      Authorization: `Bearer ${accessToken}`,
+      authorization: `Bearer ${accessToken}`,
     },
+    transports: ['polling'],
+    autoConnect: false, // Không tự động connect
+    forceNew: true,
+    timeout: 20000,
+    reconnection: true,
+    reconnectionAttempts: 3, // Giảm số lần reconnect
+    reconnectionDelay: 2000, // Tăng delay
   });
+
+  console.log(' Socket created:', socket);
+
+  // Add connection event listeners for debugging
+  socket.on('connect', () => {
+    console.log(' Socket connected successfully with ID:', socket.id);
+  });
+
+  socket.on('connect_error', (error) => {
+    console.error(' Socket connection error:', error);
+  });
+
+  socket.on('disconnect', (reason) => {
+    console.log(' Socket disconnected:', reason);
+  });
+
+  return socket;
 };
 
 export const formatCurrency = (number: number) => {
@@ -165,12 +205,12 @@ export const formatCurrency = (number: number) => {
 };
 
 export const getVietnameseDishStatus = (
-  status: (typeof DishStatus)[keyof typeof DishStatus],
+  status: (typeof ProductStatus)[keyof typeof ProductStatus],
 ) => {
   switch (status) {
-    case DishStatus.Available:
+    case ProductStatus.ACTIVE:
       return 'Có sẵn';
-    case DishStatus.Unavailable:
+    case ProductStatus.INACTIVE:
       return 'Không có sẵn';
     default:
       return 'Ẩn';
@@ -183,40 +223,50 @@ export const getVietnameseRoleStatus = (
     case Role.STAFF:
       return 'Nhân viên';
     case Role.ADMIN:
-      return 'Chủ';
+      return 'Chủ hệ thống';
+    case Role.GUEST:
+      return 'Khách hàng vãng lai';
+    case Role.USER:
+      return 'Khách hàng';
     default:
-      return 'Ẩn';
+      return 'Vô Danh';
   }
 };
 
 export const getVietnameseOrderStatus = (
-  status: (typeof OrderStatus)[keyof typeof OrderStatus],
+  status: (typeof OrderStatusValues)[keyof typeof OrderStatusValues],
 ) => {
   switch (status) {
-    case OrderStatus.Delivered:
+    case OrderStatus.COMPLETED:
       return 'Đã phục vụ';
-    case OrderStatus.Paid:
+    case OrderStatus.CONFIRMED:
       return 'Đã thanh toán';
-    case OrderStatus.Pending:
+    case OrderStatus.PENDING:
       return 'Chờ xử lý';
-    case OrderStatus.Processing:
+    case OrderStatus.PREPARING:
       return 'Đang nấu';
+    case OrderStatus.READY:
+      return 'Sẵn sàng lên món';
+    case OrderStatus.PAID:
+      return 'Đã thanh toán';
     default:
       return 'Từ chối';
   }
 };
 export const getBgOrderStatus = (
-  status: (typeof OrderStatus)[keyof typeof OrderStatus],
+  status: (typeof OrderStatusValues)[keyof typeof OrderStatusValues],
 ) => {
   switch (status) {
-    case OrderStatus.Delivered:
+    case OrderStatus.COMPLETED:
       return 'bg-green-400 text-[10px]';
-    case OrderStatus.Paid:
+    case OrderStatus.CONFIRMED:
       return 'bg-blue-500 text-[10px]';
-    case OrderStatus.Pending:
+    case OrderStatus.PENDING:
       return 'bg-yellow-300 text-[10px]';
-    case OrderStatus.Processing:
+    case OrderStatus.PREPARING:
       return 'bg-red-400 text-[10px]';
+    case OrderStatus.READY:
+      return 'bg-green-400 text-[10px]';
     default:
       return 'bg-red-400 text-[10px]';
   }
@@ -268,18 +318,13 @@ export const simpleMatchText = (fullText: string, matchText: string) => {
 };
 
 export const OrderStatusIcon = {
-  [OrderStatus.Pending]: Loader,
-  [OrderStatus.Processing]: CookingPot,
-  [OrderStatus.Rejected]: BookX,
-  [OrderStatus.Delivered]: Truck,
-  [OrderStatus.Paid]: HandCoins,
+  [OrderStatus.PENDING]: Loader,
+  [OrderStatus.PREPARING]: CookingPot,
+  [OrderStatus.CANCELLED]: BookX,
+  [OrderStatus.READY]: Truck,
+  [OrderStatus.COMPLETED]: HandCoins,
+  [OrderStatus.CONFIRMED]: HandCoins,
 };
-//   [OrderStatus.Pending]: Loader,
-//   [OrderStatus.Processing]: CookingPot,
-//   [OrderStatus.Rejected]: BookX,
-//   [OrderStatus.Delivered]: Truck,
-//   [OrderStatus.Paid]: HandCoins,
-// };
 
 export const formatDateTimeToLocaleString = (date: string | Date) => {
   return format(
