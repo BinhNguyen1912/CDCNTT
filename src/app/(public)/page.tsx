@@ -3,7 +3,7 @@
 'use client';
 
 import { useAppStore } from '@/components/app-provider';
-import ProductsPage from '@/components/productsPage';
+// import ProductsPage from '@/components/productsPage';
 import Logomarquee from '@/components/logomarquee';
 import ParticleView from '@/components/particleText';
 import { Button } from '@/components/ui/button';

@@ -18,7 +18,15 @@ export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<{
+    guestId: string | null;
+    amount: string | null;
+    status: string | null;
+    message: string | null;
+    bankCode: string | null;
+    guestName: string | null;
+    tableName: string | null;
+  } | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -28,12 +36,13 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     if (!mounted) return;
 
-    // Parse query parameters
     const guestId = searchParams.get('guestId');
     const amount = searchParams.get('amount');
     const status = searchParams.get('status');
     const message = searchParams.get('message');
     const bankCode = searchParams.get('bankCode');
+    const guestName = searchParams.get('guestName');
+    const tableName = searchParams.get('tableName');
 
     if (status === 'success') {
       setData({
@@ -42,10 +51,11 @@ export default function PaymentSuccessPage() {
         status,
         message,
         bankCode,
+        guestName,
+        tableName,
       });
       setIsOpen(true);
 
-      // Clear URL parameters
       router.replace('/guest/payment-success');
     }
   }, [searchParams, router, mounted]);
@@ -61,22 +71,31 @@ export default function PaymentSuccessPage() {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md md:overflow-y-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
               <CheckCircle className="w-12 h-12 text-green-600" />
             </div>
           </div>
-          <DialogTitle className="text-2xl font-bold text-green-600">
+          <DialogTitle className="text-2xl text-center text-green-600">
             Thanh toán thành công!
           </DialogTitle>
-          <DialogDescription className="text-base mt-4">
-            Cảm ơn quý khách đã sử dụng dịch vụ của chúng tôi
+          <DialogDescription className="text-sm text-center mt-4">
+            Cảm ơn quý khách đã sử dụng dịch vụ của tại B'Restaurant
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-4">
+          <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+            <span className="font-medium text-gray-600">Tên khách hàng :</span>
+            <span className="font-semibold">{data?.guestName}</span>
+          </div>
+          <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+            <span className="font-medium text-gray-600">Mã khách hàng :</span>
+            <span className="font-semibold">#{data?.guestId}</span>
+          </div>
+
           <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
             <span className="font-medium text-gray-600">Số tiền:</span>
             <span className="font-bold text-lg text-green-600">
@@ -94,8 +113,8 @@ export default function PaymentSuccessPage() {
           )}
 
           <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-            <span className="font-medium text-gray-600">Mã khách:</span>
-            <span className="font-semibold">#{data?.guestId}</span>
+            <span className="font-medium text-gray-600">Chổ ngồi:</span>
+            <span className="font-semibold">{data?.tableName}</span>
           </div>
         </div>
 

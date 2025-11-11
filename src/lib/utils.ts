@@ -18,7 +18,15 @@ import {
 import envConfig from '@/config';
 import { TokenPayload } from '@/types/jwt.types';
 import { guestApiRequests } from '@/apiRequest/guest';
-import { BookX, CookingPot, HandCoins, Loader, Truck } from 'lucide-react';
+import {
+  BookX,
+  CookingPot,
+  HandCoins,
+  Loader,
+  Truck,
+  ConciergeBell,
+  Check,
+} from 'lucide-react';
 import { io } from 'socket.io-client';
 import { decode } from '@/lib/jwt';
 import { TableStatus } from '@/app/constants/table.constant';
@@ -240,7 +248,7 @@ export const getVietnameseOrderStatus = (
     case OrderStatus.COMPLETED:
       return 'Đã phục vụ';
     case OrderStatus.CONFIRMED:
-      return 'Đã thanh toán';
+      return 'Xác nhận món';
     case OrderStatus.PENDING:
       return 'Chờ xử lý';
     case OrderStatus.PREPARING:
@@ -322,8 +330,9 @@ export const OrderStatusIcon = {
   [OrderStatus.PREPARING]: CookingPot,
   [OrderStatus.CANCELLED]: BookX,
   [OrderStatus.READY]: Truck,
-  [OrderStatus.COMPLETED]: HandCoins,
-  [OrderStatus.CONFIRMED]: HandCoins,
+  [OrderStatus.COMPLETED]: Check,
+  [OrderStatus.CONFIRMED]: ConciergeBell,
+  [OrderStatus.PAID]: HandCoins,
 };
 
 export const formatDateTimeToLocaleString = (date: string | Date) => {

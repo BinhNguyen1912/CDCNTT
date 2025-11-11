@@ -51,10 +51,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useSearchParams } from 'next/navigation';
 import AutoPagination from '@/components/auto-pagination';
-import {
-  AccountListResType,
-  AccountType,
-} from '@/app/SchemaModel/account.schema';
+
 import { useDeleteMutation, useGetAccountList } from '@/app/queries/useAccount';
 import { toast } from 'react-toastify';
 import { Badge } from '@/components/ui/badge';

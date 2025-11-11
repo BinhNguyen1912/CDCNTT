@@ -35,16 +35,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { createContext, useContext, useEffect, useState } from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+
 import { getVietnameseTableStatus, handleErrorApi } from '@/lib/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AutoPagination from '@/components/auto-pagination';
@@ -62,9 +53,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useListArea } from '@/app/queries/useArea';
-import { useListTableNode } from '@/app/queries/useTableNode';
-import { Wrench } from 'lucide-react';
+import {
+  useListTableNode,
+  useUpdateTableNodeMutation,
+} from '@/app/queries/useTableNode';
+import { Wrench, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type TableItem = TableNodeType;
 
@@ -205,6 +209,7 @@ export default function TableTable() {
   const pageIndex = page - 1;
   const [tableIdEdit, setTableIdEdit] = useState<number | undefined>();
   const [tableDelete, setTableDelete] = useState<TableItem | null>(null);
+  const [showChangeTokenDialog, setShowChangeTokenDialog] = useState(false);
   // --- Add area filter state ---
   const [areaId, setAreaId] = useState<number | undefined>(undefined);
   const areaListQuery = useListArea();
@@ -214,6 +219,9 @@ export default function TableTable() {
   const data = dataTableTable.filter(
     (item) => item.type == 'ROUND' || item.type == 'SQUARE',
   );
+
+  // Mutation để update token
+  const updateTableNodeMutation = useUpdateTableNodeMutation();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -257,6 +265,58 @@ export default function TableTable() {
     setTableIdEdit(row.id);
   };
 
+  // Handler để đổi token cho tất cả các bàn
+  const handleChangeAllTokens = async () => {
+    try {
+      // Lấy tất cả các bàn (không filter theo area)
+      const allTables = tableNodeQuery.data?.payload?.data ?? [];
+      const tablesToUpdate = allTables.filter(
+        (item) => item.type == 'ROUND' || item.type == 'SQUARE',
+      );
+
+      if (tablesToUpdate.length === 0) {
+        toast.warning('Không có bàn nào để cập nhật token', {
+          hideProgressBar: true,
+          autoClose: 2000,
+        });
+        return;
+      }
+
+      // Update từng bàn với changeToken: true
+      const updatePromises = tablesToUpdate.map((table) =>
+        updateTableNodeMutation.mutateAsync({
+          id: table.id,
+          changeToken: true,
+          name: table.name, // Giữ nguyên name
+          seats: table.seats, // Giữ nguyên seats
+          areaId: table.areaId, // Giữ nguyên areaId
+          status: table.status, // Giữ nguyên status
+          type: table.type, // Giữ nguyên type
+          positionX: table.positionX, // Giữ nguyên positionX
+          positionY: table.positionY, // Giữ nguyên positionY
+          width: table.width, // Giữ nguyên width
+          height: table.height, // Giữ nguyên height
+          rotation: table.rotation, // Giữ nguyên rotation
+          imageUrl: table.imageUrl, // Giữ nguyên imageUrl
+          layoutId: table.layoutId, // Giữ nguyên layoutId
+        }),
+      );
+
+      await Promise.all(updatePromises);
+
+      toast.success(
+        `Đã cập nhật token cho ${tablesToUpdate.length} bàn thành công!`,
+        {
+          hideProgressBar: true,
+          autoClose: 3000,
+        },
+      );
+      setShowChangeTokenDialog(false);
+    } catch (error) {
+      handleErrorApi({ error });
+    }
+  };
+
   return (
     <TableTableContext.Provider
       value={{ tableIdEdit, setTableIdEdit, tableDelete, setTableDelete }}
@@ -267,6 +327,39 @@ export default function TableTable() {
           tableDelete={tableDelete}
           setTableDelete={setTableDelete}
         />
+        {/* Dialog xác nhận đổi token */}
+        <AlertDialog
+          open={showChangeTokenDialog}
+          onOpenChange={setShowChangeTokenDialog}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Đổi token cho tất cả bàn?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn có chắc chắn muốn đổi token cho tất cả các bàn ăn? Hành động
+                này sẽ làm vô hiệu tất cả các QR code hiện tại và tạo QR code
+                mới cho tất cả các bàn.
+                <br />
+                <br />
+                <strong>
+                  Lưu ý: Khách hàng đang sử dụng QR code cũ sẽ không thể đặt món
+                  được nữa.
+                </strong>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Hủy</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleChangeAllTokens}
+                disabled={updateTableNodeMutation.isPending}
+              >
+                {updateTableNodeMutation.isPending
+                  ? 'Đang xử lý...'
+                  : 'Xác nhận'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <div className="flex items-center py-4 gap-4 justify-between">
           <div className="flex items-center gap-4 py-4">
             {' '}
@@ -300,12 +393,27 @@ export default function TableTable() {
               </SelectContent>
             </Select>
           </div>
-          <Link
-            href="/manage/setting-table"
-            className="flex items-center gap-2 bg-black/90 text-white border rounded-md px-4 py-2 hover:bg-gray-100 hover:text-black"
-          >
-            <Wrench className="w-4 h-4" /> Thiết kế bàn ăn
-          </Link>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowChangeTokenDialog(true)}
+              variant="outline"
+              className="flex items-center gap-2"
+              disabled={updateTableNodeMutation.isPending}
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${
+                  updateTableNodeMutation.isPending ? 'animate-spin' : ''
+                }`}
+              />
+              Đổi Token
+            </Button>
+            <Link
+              href="/manage/setting-table"
+              className="flex items-center gap-2 bg-black/90 text-white border rounded-md px-4 py-2 hover:bg-gray-100 hover:text-black"
+            >
+              <Wrench className="w-4 h-4" /> Thiết kế bàn ăn
+            </Link>
+          </div>
         </div>
         <div className="rounded-md border">
           <Table>

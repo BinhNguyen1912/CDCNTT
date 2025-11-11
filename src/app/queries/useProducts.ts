@@ -1,4 +1,4 @@
-import dishesApiRequest from '@/apiRequest/dishes';
+// import dishesApiRequest from '@/apiRequest/dishes';
 import productsApiRequest from '@/apiRequest/products';
 import {
   GetManageProductQueryType,
@@ -13,19 +13,19 @@ export const useGetProducts = () => {
   });
 };
 
-export const useGetDish = ({
-  enabled,
-  id,
-}: {
-  id: number;
-  enabled: boolean;
-}) => {
-  return useQuery({
-    queryKey: ['Dishes', id],
-    queryFn: () => dishesApiRequest.getDish(id),
-    enabled,
-  });
-};
+// export const useGetDish = ({
+//   enabled,
+//   id,
+// }: {
+//   id: number;
+//   enabled: boolean;
+// }) => {
+//   return useQuery({
+//     queryKey: ['Dishes', id],
+//     queryFn: () => dishesApiRequest.getDish(id),
+//     enabled,
+//   });
+// };
 
 export const useGetProduct = ({
   enabled,
@@ -79,17 +79,17 @@ export const useUpdateProductMutation = () => {
   });
 };
 
-export const useDeleteDishMutation = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: dishesApiRequest.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['Dishes'],
-      });
-    },
-  });
-};
+// export const useDeleteDishMutation = () => {
+//   const queryClient = useQueryClient();
+//   return useMutation({
+//     mutationFn: dishesApiRequest.delete,
+//     onSuccess: () => {
+//       queryClient.invalidateQueries({
+//         queryKey: ['Dishes'],
+//       });
+//     },
+//   });
+// };
 
 export const useDeleteProductMutation = () => {
   const queryClient = useQueryClient();

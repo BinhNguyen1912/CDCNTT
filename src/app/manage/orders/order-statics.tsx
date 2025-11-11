@@ -1,5 +1,11 @@
 import { Fragment, useMemo, useState } from 'react';
-import { Users } from 'lucide-react';
+import {
+  ConciergeBell,
+  CookingPot,
+  HandCoins,
+  Loader,
+  Users,
+} from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   OrderStatusIcon,
@@ -92,12 +98,6 @@ export default function OrderStatics({
     );
   }, [dataOrder]);
 
-  const getTableNumber = (tableName: string): number => {
-    const match = tableName.match(/\d+/);
-    return match ? parseInt(match[0], 10) : 0;
-  };
-
-  // Helper function để nhóm đơn hàng theo guestId
   const groupOrdersByGuest = (orders: any[]) => {
     return orders.reduce((acc: any, order: any) => {
       // Kiểm tra xem order có guestId không
@@ -229,10 +229,10 @@ export default function OrderStatics({
               ['TABLE', 'SQUARE', 'ROUND'].includes(table.type),
             )
             .map((table) => {
-              const tableNumber: number = getTableNumber(table.name);
+              const tableKey: number = Number(table.id);
               const tableStatics:
                 | Record<number, StatusCountObject>
-                | undefined = statics?.table?.[tableNumber];
+                | undefined = statics?.table?.[tableKey];
               let isEmptyTable = true;
               let countObject: StatusCountObject = {
                 PENDING: 0,
@@ -241,11 +241,15 @@ export default function OrderStatics({
                 COMPLETED: 0,
                 CANCELLED: 0,
                 READY: 0,
+                PAID: 0,
               } as any;
               const servingGuestCount = Object.values(
-                servingGuestByTableNumber[tableNumber] ?? [],
+                servingGuestByTableNumber[tableKey] ?? [],
               ).length;
-
+              console.log(`Checking Table ID ${table.id}:`, {
+                tableStatics: tableStatics,
+                servingGuestCount: servingGuestCount,
+              });
               if (tableStatics) {
                 for (const guestId in tableStatics) {
                   const guestStatics = tableStatics[Number(guestId)] as any;
@@ -254,6 +258,9 @@ export default function OrderStatics({
                       guestStatics.PENDING,
                       guestStatics.CONFIRMED,
                       guestStatics.PREPARING,
+                      guestStatics.READY,
+                      guestStatics.COMPLETED,
+                      guestStatics.PAID,
                     ].some(
                       (status: number | undefined) =>
                         status !== 0 && status !== undefined,
@@ -272,6 +279,7 @@ export default function OrderStatics({
                     CANCELLED:
                       countObject.CANCELLED + (guestStatics.CANCELLED ?? 0),
                     READY: countObject.READY + (guestStatics.READY ?? 0),
+                    PAID: countObject.PAID + (guestStatics.PAID ?? 0),
                   } as any;
                 }
               }
@@ -298,19 +306,21 @@ export default function OrderStatics({
                     <div className="text-xs text-muted-foreground">
                       {table.seats} chỗ
                     </div>
-                    {/* <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4" />
-                            <span>{servingGuestCount}</span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Đang phục vụ: {servingGuestCount} khách
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider> */}
+                    {servingGuestCount > 0 && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4" />
+                              <span>{servingGuestCount}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Đang phục vụ: {servingGuestCount} khách
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                   <Separator
                     orientation="vertical"
@@ -342,7 +352,7 @@ export default function OrderStatics({
                         <Tooltip>
                           <TooltipTrigger>
                             <div className="flex gap-2 items-center">
-                              <span className="inline-block w-3 h-3 rounded-full bg-amber-500" />
+                              <Loader className="w-4 h-4" />
                               <span>
                                 {countObject[OrderStatus.PENDING] ?? 0}
                               </span>
@@ -357,7 +367,7 @@ export default function OrderStatics({
                         <Tooltip>
                           <TooltipTrigger>
                             <div className="flex gap-2 items-center">
-                              <span className="inline-block w-3 h-3 rounded-full bg-blue-500" />
+                              <ConciergeBell className="w-4 h-4" />
                               <span>
                                 {countObject[OrderStatus.CONFIRMED] ?? 0}
                               </span>
@@ -371,7 +381,7 @@ export default function OrderStatics({
                         <Tooltip>
                           <TooltipTrigger>
                             <div className="flex gap-2 items-center">
-                              <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
+                              <CookingPot className="w-4 h-4 text-red-400" />
                               <span>
                                 {countObject[OrderStatus.PREPARING] ?? 0}
                               </span>
@@ -380,6 +390,18 @@ export default function OrderStatics({
                           <TooltipContent>
                             {getVietnameseOrderStatus(OrderStatus.PREPARING)}:{' '}
                             {countObject[OrderStatus.PREPARING] ?? 0} đơn
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <div className="flex gap-2 items-center">
+                              <HandCoins className="w-4 h-4 text-yellow-400" />
+                              <span>{countObject[OrderStatus.PAID] ?? 0}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {getVietnameseOrderStatus(OrderStatus.CONFIRMED)}:{' '}
+                            {countObject[OrderStatus.PAID] ?? 0} đơn
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>

@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { endOfDay, format, startOfDay } from 'date-fns';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { toast } from 'react-toastify';
+import PaymentSuccessDialog from '@/components/payment-success-dialog';
 import {
   ColumnFiltersState,
   SortingState,
@@ -99,6 +100,14 @@ export default function OrderTable() {
   const [orderList, setOrderList] = useState<OrdersListResType['data']>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasNewOrder, setHasNewOrder] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentDialogData, setPaymentDialogData] = useState<{
+    guestName?: string;
+    tableName?: string;
+    orderCount?: number;
+    amountText?: string;
+    message?: string;
+  } | null>(null);
 
   // API calls
   const fetchOrderList = async () => {
@@ -257,40 +266,28 @@ export default function OrderTable() {
       return;
     }
 
-    console.log('🎧 Setting up payment-success listener...');
-
     function onPaymentSuccess(data: any) {
-      console.log('💳 Payment success event received:', data);
-
-      // Show toast notification
       const orderCount = Array.isArray(data)
         ? data.length
         : data?.orders?.length || 1;
-      toast.success(`Đã thanh toán thành công ${orderCount} đơn hàng!`, {
-        hideProgressBar: true,
-        autoClose: 3000,
+      setPaymentDialogData({
+        ...data,
+        orderCount,
       });
-
-      // Refetch order list to get updated data
-      console.log('🔄 Refetching orders after payment...');
+      setPaymentDialogOpen(true);
       refetchOrderList();
-
-      // Refetch tableNode to update guest count
       tableListQuery.refetch();
     }
 
     socket.on('payment-success', onPaymentSuccess);
-    console.log('✅ payment-success listener registered');
 
     return () => {
       socket.off('payment-success', onPaymentSuccess);
-      console.log('🗑️ payment-success listener removed');
     };
   }, [socket, refetchOrderList, tableListQuery]);
 
   const tableList = tableListQuery.data?.payload?.data ?? [];
   const tableListSortedByNumber = tableList.sort((a: any, b: any) => {
-    // Extract number from name like "Lầu 1 - Bàn 13" -> 13
     const getNumber = (name: string) => {
       const match = name.match(/\d+/);
       return match ? parseInt(match[0]) : 0;
@@ -422,10 +419,14 @@ export default function OrderTable() {
     }
 
     function onPayment(data: any) {
-      const { guest } = data[0];
-      toast(
-        `${guest?.name} tại bàn ${guest?.tableNode.name} thanh toán thành công ${data.length} đơn`,
-      );
+      const first = Array.isArray(data) ? data[0] : data;
+      const guestName = first?.guest?.name;
+      const tableName = first?.guest?.tableNode?.name;
+      const orderCount = Array.isArray(data)
+        ? data.length
+        : first?.orders?.length || 1;
+      setPaymentDialogData({ ...first, guestName, tableName, orderCount });
+      setPaymentDialogOpen(true);
       refetch();
 
       // Refetch tableNode để cập nhật số người
@@ -661,6 +662,11 @@ export default function OrderTable() {
         </div>
       </div>
       <NewOrderSound hasNewOrder={hasNewOrder} />
+      <PaymentSuccessDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        data={paymentDialogData}
+      />
     </OrderTableContext.Provider>
   );
 }

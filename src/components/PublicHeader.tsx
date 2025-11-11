@@ -8,14 +8,16 @@ import NavItems from '@/app/(public)/nav-items';
 import { ModeToggle } from '@/components/ToggleTheme';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import GuestMessageDialog from '@/components/guest-message-dialog';
+import { QuickReminderDialog } from '@/components/reminderDialog';
 
 export default function PublicHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
-  // Check if we're on guest menu page
   const isGuestMenu = pathname?.includes('/guest/menu');
+  const isGuestRoute = pathname?.includes('/guest/');
 
   useEffect(() => {
     setMounted(true);
@@ -87,7 +89,8 @@ export default function PublicHeader() {
           </nav>
         </SheetContent>
       </Sheet>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        {isGuestRoute && <GuestMessageDialog />}
         <ModeToggle />
       </div>
     </header>

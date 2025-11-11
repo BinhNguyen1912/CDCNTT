@@ -419,24 +419,26 @@ export default function MenuOrder() {
                 ? guestInfo.tableName
                 : 'Bàn đã chọn'}
             </h3>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCallStaff}
-                    disabled={callStaffMutation.isPending}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Bell className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Gọi nhân viên</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="flex items-center gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCallStaff}
+                      disabled={callStaffMutation.isPending}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Bell className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Gọi nhân viên</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
           {orders.length === 0 ? (
             <div className="h-[60vh] grid place-items-center text-center text-gray-500">

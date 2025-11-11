@@ -13,7 +13,14 @@ import {
   getVietnameseOrderStatus,
   handleErrorApi,
 } from '@/lib/utils';
-import { ALargeSmall, CookingPot, HandCoins, Loader } from 'lucide-react';
+import {
+  ALargeSmall,
+  Check,
+  ConciergeBell,
+  CookingPot,
+  HandCoins,
+  Loader,
+} from 'lucide-react';
 import Image from 'next/image';
 import { Fragment } from 'react';
 import { OrdersListResType } from '@/app/ValidationSchemas/order.schema';
@@ -112,7 +119,7 @@ export default function OrderGuestDetail({
                   <Loader className="w-4 h-4" />
                 )}
                 {order.status === OrderStatus.CONFIRMED && (
-                  <HandCoins className="w-4 h-4" />
+                  <ConciergeBell className="w-4 h-4" />
                 )}
                 {order.status === OrderStatus.CANCELLED && (
                   <ALargeSmall className="w-4 h-4 text-red-400" />
@@ -120,12 +127,12 @@ export default function OrderGuestDetail({
                 {order.status === OrderStatus.PREPARING && (
                   <CookingPot className="w-4 h-4 text-red-400" />
                 )}
-                {/* {order.status === OrderStatus.Delivered && (
-                  <OrderStatusIcon.Delivered className="w-4 h-4" />
+                {order.status === OrderStatus.COMPLETED && (
+                  <Check className="w-4 h-4 text-red-400" />
                 )}
-                {order.status === OrderStatus.Paid && (
-                  <OrderStatusIcon.Paid className="w-4 h-4 text-yellow-400" />
-                )} */}
+                {order.status === OrderStatus.PAID && (
+                  <OrderStatusIcon.PAID className="w-4 h-4 text-yellow-400" />
+                )}
               </span>
               <Image
                 src={productImages[0] || defaultImage}

@@ -119,7 +119,7 @@ export function TablesDialog({
 }) {
   const [open, setOpen] = useState(false);
   const { data: dataTableNodes, isLoading } = useListTableNode();
-  const data: TableNodeType[] = dataTableNodes?.payload?.data || mockTableNodes;
+  const data: TableNodeType[] = dataTableNodes?.payload?.data || [];
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -215,39 +215,49 @@ export function TablesDialog({
                   </TableHeader>
                   <TableBody>
                     {table.getRowModel().rows?.length ? (
-                      table.getRowModel().rows.map((row) => (
-                        <TableRow
-                          key={row.id}
-                          data-state={row.getIsSelected() && 'selected'}
-                          onClick={() => {
-                            if (
-                              row.original.status === TableStatus.AVAILABLE ||
-                              row.original.status === TableStatus.RESERVED
-                            ) {
-                              choose(row.original);
-                            }
-                          }}
-                          className={cn({
-                            'cursor-pointer hover:bg-muted/50':
-                              row.original.status === TableStatus.AVAILABLE ||
-                              row.original.status === TableStatus.RESERVED,
-                            'cursor-not-allowed opacity-50':
-                              row.original.status === TableStatus.OCCUPIED ||
-                              row.original.status ===
-                                TableStatus.OUT_OF_SERVICE ||
-                              row.original.status === TableStatus.HIDE,
-                          })}
-                        >
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id}>
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext(),
-                              )}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))
+                      table
+                        .getRowModel()
+                        .rows.filter((row) => {
+                          const originalType = row.original.type;
+                          return (
+                            originalType === 'SQUARE' ||
+                            originalType === 'ROUND' ||
+                            originalType === 'TABLE'
+                          );
+                        })
+                        .map((row) => (
+                          <TableRow
+                            key={row.id}
+                            data-state={row.getIsSelected() && 'selected'}
+                            onClick={() => {
+                              if (
+                                row.original.status === TableStatus.AVAILABLE ||
+                                row.original.status === TableStatus.RESERVED
+                              ) {
+                                choose(row.original);
+                              }
+                            }}
+                            className={cn({
+                              'cursor-pointer hover:bg-muted/50':
+                                row.original.status === TableStatus.AVAILABLE ||
+                                row.original.status === TableStatus.RESERVED,
+                              'cursor-not-allowed opacity-50':
+                                row.original.status === TableStatus.OCCUPIED ||
+                                row.original.status ===
+                                  TableStatus.OUT_OF_SERVICE ||
+                                row.original.status === TableStatus.HIDE,
+                            })}
+                          >
+                            {row.getVisibleCells().map((cell) => (
+                              <TableCell key={cell.id}>
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext(),
+                                )}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))
                     ) : (
                       <TableRow>
                         <TableCell

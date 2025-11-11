@@ -14,7 +14,7 @@ import http from '@/lib/http';
 export const authApiRequests = {
   refreshTokenRequest: null as Promise<{
     status: number;
-    payload: GetAccessTokenResType;
+    payload: GetAccessTokenResType | null;
   }> | null,
 
   logout: () =>

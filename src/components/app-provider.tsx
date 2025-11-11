@@ -12,6 +12,8 @@ import React, {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import RefreshToken from '@/components/refresh-token';
+import MessageSocketHandler from '@/components/message-socket-handler';
+import ReminderSocketHandler from '@/components/reminder-socket-handler';
 import { create } from 'zustand';
 import {
   generateSocketIo,
@@ -153,6 +155,8 @@ export default function AppProvider({
       <RefreshToken />
       <ListenLogoutSocket />
       <NewOrderSound />
+      <MessageSocketHandler />
+      <ReminderSocketHandler />
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
     // </AppContext.Provider>

@@ -8,6 +8,7 @@ import {
   Table,
   Warehouse,
   AlarmSmoke,
+  ClipboardClock,
 } from 'lucide-react';
 
 const menuItems = [
@@ -33,6 +34,12 @@ const menuItems = [
     title: 'Món ăn',
     Icon: Salad,
     href: '/manage/products',
+    roles: [Role.ADMIN],
+  },
+  {
+    title: 'Lời Nhắc',
+    Icon: ClipboardClock,
+    href: '/manage/reminders',
     roles: [Role.ADMIN],
   },
   {

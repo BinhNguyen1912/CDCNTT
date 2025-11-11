@@ -243,11 +243,9 @@ export default function OrderList() {
 
   return (
     <>
-      {/* Header with Call Staff Button */}
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h1 className="text-lg md:text-xl lg:text-2xl font-bold">Đơn hàng</h1>
 
-        {/* Desktop Call Staff Button */}
         <div className="hidden md:block">
           <TooltipProvider>
             <Tooltip>
@@ -269,8 +267,7 @@ export default function OrderList() {
           </TooltipProvider>
         </div>
 
-        {/* Mobile Call Staff Button */}
-        <div className="md:hidden">
+        <div className="md:hidden mt-8">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -416,7 +413,6 @@ export default function OrderList() {
         </div>
       )}
 
-      {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -432,7 +428,6 @@ export default function OrderList() {
           </DialogHeader>
 
           <div className="flex flex-col gap-3 md:gap-4 py-4">
-            {/* Cash Payment Button - Disabled */}
             <button
               disabled
               className="flex items-center gap-3 md:gap-4 p-4 md:p-6 rounded-xl border-2 border-gray-200 bg-gray-100 cursor-not-allowed opacity-60"
@@ -453,7 +448,6 @@ export default function OrderList() {
               </div>
             </button>
 
-            {/* VNPay Payment Button */}
             <button
               onClick={() => handlePayment('vnpay')}
               disabled={createPaymentUrl.isPending}
@@ -494,7 +488,6 @@ export default function OrderList() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Button - Show when there are orders to pay */}
       {waitingForPay.quantity > 0 && (
         <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4 md:px-0">
           <div className="bg-white rounded-2xl shadow-2xl border border-orange-200 overflow-hidden">
